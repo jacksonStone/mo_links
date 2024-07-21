@@ -1,0 +1,19 @@
+[
+    {
+      "id": 1,
+      "priority": 1,
+      "action": {
+        "type": "redirect",
+        "redirect": {
+          "transform": {
+            "scheme": "https",
+            "host": "www.molinks.me"
+          }
+        }
+      },
+      "condition": {
+        "urlFilter": "||mo",
+        "resourceTypes": ["main_frame"]
+      }
+    }
+  ]

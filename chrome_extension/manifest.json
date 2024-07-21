@@ -1,0 +1,22 @@
+{
+    "manifest_version": 3,
+    "name": "Mo Links",
+    "version": "1.0",
+    "description": "A Chrome extension to redirect mo links to molinks.me to allow very short links - specific to your organization",
+    "permissions": [
+      "declarativeNetRequest"
+    ],
+    "host_permissions": [
+      "<all_urls>"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "declarative_net_request": {
+      "rule_resources": [{
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }]
+    }
+  }

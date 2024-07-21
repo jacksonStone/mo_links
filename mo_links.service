@@ -1,0 +1,12 @@
+[Unit]
+Description=MoLinks
+After=network.target
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+ExecStart=/home/ubuntu/mo_links
+EnvironmentFile=/home/ubuntu/.ubuntu-env
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
