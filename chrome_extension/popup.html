@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mo Links</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            width: 300px;
+            padding: 20px;
+            font-style: bold;
+            background-color: #6b7281;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+            align-items: flex-start;
+        }
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .input-group span {
+            margin-right: 5px;
+            font-weight: bold;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+        input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        #url {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .error input {
+            border-color: #ff0000;
+        }
+        .error-text {
+            color: #ff0000;
+            font-size: 12px;
+            margin-bottom: 5px;
+            display: none;
+            align-self: flex-start;
+        }
+        .error .error-text {
+            display: block;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #6b7281;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #6b7281;
+        }
+        .subtle-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #bbbec4;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        .subtle-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-group" id="name-group">
+            <div class="error-text" id="error-text"></div>
+            <div class="input-wrapper">
+                <span><b>mo /</b></span>
+                <input type="text" id="name" placeholder="mo">
+            </div>
+        </div>
+        <input type="url" id="url" placeholder="URL">
+        <button id="submit">Mo Link It</button>
+        <a href="#" class="subtle-link" id="see-links">Edit Mo Links</a>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
