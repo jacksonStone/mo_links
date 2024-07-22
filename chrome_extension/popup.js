@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     const nameInput = document.getElementById('name');
     const nameGroup = document.getElementById('name-group');
-    const submitButton = document.getElementById('submit');
 
     nameInput.addEventListener('input', validateName);
 
@@ -52,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
                 .then(response => response.json())
                 .then(data => {
-                    alert('Mo Link created successfully!');
+                    alert('mo/' + name + " created successfully!");
                     // Clear the form
                     document.getElementById('name').value = '';
                     document.getElementById('url').value = '';

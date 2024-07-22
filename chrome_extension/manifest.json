@@ -6,6 +6,7 @@
     "permissions": [
       "declarativeNetRequest",
       "activeTab",
+      "webNavigation",
       "tabs"
     ],
     "host_permissions": [
