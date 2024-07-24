@@ -12,7 +12,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-//go:embed static/index.html
+//go:embed static
 var static embed.FS
 var db *sql.DB
 
@@ -33,7 +33,12 @@ func main() {
 	// Create a map of different dbs to paths
 
 	http.HandleFunc("/____reserved/privacy_policy", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "I will never look at your content. The only thing this chrome extension will do is expand mo/ to https://www.molinks.me/. Everything else is managed within https://www.molinks.me/.")
+		bytes, err := static.ReadFile("static/privacy_policy.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Write(bytes)
 	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		links, err := decodeLink(r)
