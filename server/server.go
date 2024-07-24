@@ -1,21 +1,14 @@
 package main
 
 import (
-	"database/sql"
 	"embed"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"strings"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 //go:embed static
 var static embed.FS
-var db *sql.DB
 
 type AddLinkRequest struct {
 	Url  string `json:"url"`
@@ -23,19 +16,7 @@ type AddLinkRequest struct {
 }
 
 func main() {
-	rootPath := "./"
-	dbPath := "mo_links.db"
-	_, err := os.Stat(rootPath + dbPath)
-	if os.IsNotExist(err) {
-		rootPath = "../../sqlite_wrapper/migrator/"
-	}
-	path := rootPath + dbPath
-	fmt.Println("path: " + path)
-
-	db, err = sql.Open("sqlite3", path)
-	if err != nil {
-		log.Fatal(err)
-	}
+	InitializeDB()
 	http.HandleFunc("/____reserved/privacy_policy", func(w http.ResponseWriter, r *http.Request) {
 		bytes, err := static.ReadFile("static/privacy_policy.html")
 		if err != nil {
@@ -46,14 +27,22 @@ func main() {
 	})
 
 	http.HandleFunc("/____reserved/api/add", func(w http.ResponseWriter, r *http.Request) {
+		// Allow CORS
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		// Handle preflight request
+		if r.Method == http.MethodOptions {
+			return
+		}
 		var request AddLinkRequest
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		userId := 1 // TODO localize to the user
-		_, err = db.Exec(`INSERT INTO mo_links_entries (url, name, created_by_user_id) VALUES (?, ?, ?)`, request.Url, request.Name, userId)
+		userId := int32(1)
+		err = AddLink(request.Url, request.Name, userId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -87,34 +76,20 @@ func main() {
 
 	http.ListenAndServe(":3003", nil)
 }
+
 func decodeLink(r *http.Request) ([]string, error) {
 	path := strings.TrimPrefix(r.URL.Path, "/")
 	if path == "" {
 		return []string{}, nil
 	}
-	userId := 1
-	rows, err := db.Query(`
-	SELECT url, organization_id FROM mo_links_entries 
-	WHERE (
-		created_by_user_id = ? 
-		OR 
-		organization_id IN (
-			SELECT organization_id FROM mo_links_organization_memberships WHERE user_id = ?
-		)
-	) AND name = ?`, userId, userId, path)
+	userId := int32(1)
+	links, err := GetMatchingLinks(userId, path)
 	if err != nil {
 		return []string{}, err
 	}
-	defer rows.Close()
-	var links []string
-	for rows.Next() {
-		var url string
-		var organizationId int32
-		rows.Scan(&url, &organizationId)
-		links = append(links, url)
-	}
 	return links, nil
 }
+
 func serveHomePage(w http.ResponseWriter) {
 	bytes, err := static.ReadFile("static/index.html")
 	if err != nil {

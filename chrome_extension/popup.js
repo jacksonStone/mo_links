@@ -1,3 +1,5 @@
+// const root = "localhost:3003"
+const root = "https://www.molinks.me"
 document.addEventListener('DOMContentLoaded', function () {
     // Get the current tab's URL
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -42,15 +44,14 @@ document.addEventListener('DOMContentLoaded', function () {
         name = name.trim();
         url = url.trim();
         if (validateName() && name && url) {
-            fetch('https://www.molinks.me/____reserved/api/add', {
+            fetch(root + '/____reserved/api/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ name, url }),
             })
-                .then(response => response.json())
-                .then(data => {
+                .then(() => {
                     alert('mo/' + name + " created successfully!");
                     // Clear the form
                     document.getElementById('name').value = '';
@@ -67,6 +68,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Add event listener for the "See Your Mo Links" link
     document.getElementById('see-links').addEventListener('click', function (e) {
         e.preventDefault(); // Prevent the default link behavior
-        chrome.tabs.create({ url: 'https://www.molinks.me' });
+        chrome.tabs.create({ url: root });
     });
 });

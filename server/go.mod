@@ -1,4 +1,4 @@
-module sqlite_wrapper
+module mo_links
 
 go 1.22.2
 
