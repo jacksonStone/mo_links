@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,11 @@ import (
 //go:embed static
 var static embed.FS
 var db *sql.DB
+
+type AddLinkRequest struct {
+	Url  string `json:"url"`
+	Name string `json:"name"`
+}
 
 func main() {
 	rootPath := "./"
@@ -30,8 +36,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Create a map of different dbs to paths
-
 	http.HandleFunc("/____reserved/privacy_policy", func(w http.ResponseWriter, r *http.Request) {
 		bytes, err := static.ReadFile("static/privacy_policy.html")
 		if err != nil {
@@ -40,6 +44,22 @@ func main() {
 		}
 		w.Write(bytes)
 	})
+
+	http.HandleFunc("/____reserved/api/add", func(w http.ResponseWriter, r *http.Request) {
+		var request AddLinkRequest
+		err := json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		userId := 1 // TODO localize to the user
+		_, err = db.Exec(`INSERT INTO mo_links_entries (url, name, created_by_user_id) VALUES (?, ?, ?)`, request.Url, request.Name, userId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		links, err := decodeLink(r)
 		if err != nil {

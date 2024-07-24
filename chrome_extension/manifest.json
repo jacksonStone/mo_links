@@ -10,7 +10,7 @@
       "tabs"
     ],
     "host_permissions": [
-      "<all_urls>"
+      "*://mo/*"
     ],
     "background": {
       "service_worker": "background.js"
