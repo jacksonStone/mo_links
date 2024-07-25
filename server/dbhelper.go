@@ -2,18 +2,18 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"os"
-	"unicode"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
+var stmtGetMatchingLinks *sql.Stmt
+var stmtAddLink *sql.Stmt
 
-func InitializeDB() {
+func initializeDB() {
 	rootPath := "./"
 	dbPath := "mo_links.db"
 	_, err := os.Stat(rootPath + dbPath)
@@ -27,10 +27,21 @@ func InitializeDB() {
 		log.Fatal(err)
 	}
 	fmt.Println("DB initialized: " + path)
+	stmtAddLink = prepareAddLinkStmt()
+	stmtGetMatchingLinks = prepareGetMatchingLinksStmt()
 }
 
-func GetMatchingLinks(userId int32, name string) ([]string, error) {
-	rows, err := db.Query(`
+func prepareAddLinkStmt() *sql.Stmt {
+	stmtAddLink, err := db.Prepare(`
+	INSERT INTO mo_links_entries (url, name, created_by_user_id) VALUES (?, ?, ?)`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return stmtAddLink
+}
+
+func prepareGetMatchingLinksStmt() *sql.Stmt {
+	stmtGetMatchingLinks, err := db.Prepare(`
 	SELECT url, organization_id FROM mo_links_entries 
 	WHERE (
 		created_by_user_id = ? 
@@ -38,7 +49,15 @@ func GetMatchingLinks(userId int32, name string) ([]string, error) {
 		organization_id IN (
 			SELECT organization_id FROM mo_links_organization_memberships WHERE user_id = ?
 		)
-	) AND name = ? ORDER BY created_at DESC`, userId, userId, name)
+	) AND name = ? ORDER BY created_at DESC`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return stmtGetMatchingLinks
+}
+
+func dbGetMatchingLinks(userId int32, name string) ([]string, error) {
+	rows, err := stmtGetMatchingLinks.Query(userId, userId, name)
 	if err != nil {
 		return []string{}, err
 	}
@@ -53,53 +72,10 @@ func GetMatchingLinks(userId int32, name string) ([]string, error) {
 	return links, nil
 }
 
-func AddLink(url string, name string, userId int32) error {
-	err := validName(name)
+func dbAddLink(url string, name string, userId int32) error {
+	_, err := stmtAddLink.Exec(url, name, userId)
 	if err != nil {
 		return err
-	}
-	err = validUrl(url)
-	if err != nil {
-		return err
-	}
-	links, err := GetMatchingLinks(userId, name)
-	if err != nil {
-		return err
-	}
-	if len(links) > 0 {
-		return errors.New("link already exists")
-	}
-	_, err = db.Exec(`
-		INSERT INTO mo_links_entries (url, name, created_by_user_id) VALUES (?, ?, ?)`, url, name, userId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func validUrl(url string) error {
-	if url == "" {
-		return errors.New("url must not be empty")
-	}
-	// can't be longer than 2000 charecters
-	if len(url) > 2000 {
-		return errors.New("url must be 2000 characters or less")
-	}
-	return nil
-}
-
-func validName(name string) error {
-	// Name must be 1-255 characters long
-	if len(name) == 0 || len(name) > 255 {
-		return errors.New("name must be 1-255 characters long")
-	}
-	for _, char := range name {
-		if !unicode.IsLetter(char) && !unicode.IsDigit(char) && char != '_' && char != '-' {
-			return errors.New("name must only contain letters, digits, underscores, and hyphens")
-		}
-	}
-	if name == "____reserved" {
-		return errors.New("name must not be '____reserved'")
 	}
 	return nil
 }

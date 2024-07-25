@@ -16,7 +16,7 @@ type AddLinkRequest struct {
 }
 
 func main() {
-	InitializeDB()
+	initializeDB()
 	http.HandleFunc("/____reserved/privacy_policy", func(w http.ResponseWriter, r *http.Request) {
 		bytes, err := static.ReadFile("static/privacy_policy.html")
 		if err != nil {
@@ -42,9 +42,9 @@ func main() {
 			return
 		}
 		userId := int32(1)
-		err = AddLink(request.Url, request.Name, userId)
+		err = addLink(request.Url, request.Name, userId)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusExpectationFailed)
 			return
 		}
 	})
@@ -59,11 +59,6 @@ func main() {
 		if len(links) == 0 {
 			// TODO Open up the home page to create a new link
 			serveHomePage(w)
-			return
-		}
-		if len(links) > 1 {
-			// TODO Support multiple definitions
-			http.NotFound(w, r)
 			return
 		}
 		link := links[0]
@@ -83,7 +78,7 @@ func decodeLink(r *http.Request) ([]string, error) {
 		return []string{}, nil
 	}
 	userId := int32(1)
-	links, err := GetMatchingLinks(userId, path)
+	links, err := getMatchingLinks(userId, path)
 	if err != nil {
 		return []string{}, err
 	}

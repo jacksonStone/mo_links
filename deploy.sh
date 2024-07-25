@@ -1,3 +1,4 @@
+#!/bin/bash
 
 # Step 2: SCP the Go binary to the EC2 instance
 echo "Copying Go binary to EC2 instance..."

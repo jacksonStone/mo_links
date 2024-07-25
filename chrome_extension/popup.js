@@ -1,70 +1,66 @@
-// const root = "localhost:3003"
 const root = "https://www.molinks.me"
+
+function validateUrl(url) {
+    // can't be longer than 2048 characters
+    if (url.length > 2048) {
+        surfaceError("url must be 2048 characters or less");
+        return false
+    }
+    return true;
+}
+function validateName(name) {
+    const validRegex = /^[a-zA-Z0-9_-]+$/;
+    if (name.length > 255) {
+        surfaceError("Name must be 255 characters or less.");
+        return false;
+    }
+    if (name === '____reserved') {
+        surfaceError("____reserved is... well... reserved.");
+        return false;
+    }
+    if (name === '' || validRegex.test(name)) {
+        return true;
+    } else {
+        surfaceError("Only letters, numbers, _, and - are allowed in the mo/ path.");
+        return false;
+    }
+}
+function surfaceError(message) {
+    document.getElementById("error-text").textContent = message;
+    nameGroup.classList.add('error');
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+    const nameInput = document.getElementById('name');
+    const nameGroup = document.getElementById('name-group');
+    const urlInput = document.getElementById('url');
+    const hideError = () => {
+        if (validateName(nameInput.value) && validateUrl(urlInput.value)) {
+            document.getElementById("error-text").textContent = "";
+            nameGroup.classList.remove('error');
+        }
+    }
+
+    nameInput.addEventListener('input', hideError);
+    urlInput.addEventListener('input', hideError);
+
     // Get the current tab's URL
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         var currentTab = tabs[0];
         var currentUrl = currentTab.url;
         if (!currentUrl) {
             // Some pages like about:blank don't have a URL
             return;
         }
-
         // Set the URL input field's value
-        document.getElementById('url').value = currentUrl;
+        urlInput.value = currentUrl;
     });
-    const nameInput = document.getElementById('name');
-    const nameGroup = document.getElementById('name-group');
-    const urlInput = document.getElementById('url');
-    nameInput.addEventListener('input', hideError);
-    urlInput.addEventListener('input', hideError);
-    function surfaceError(message) {
-        document.getElementById("error-text").textContent = message;
-        nameGroup.classList.add('error');
-    }
-    function hideError() {
-        if (validateName(nameInput.value) && validateUrl(urlInput.value)) {
-            document.getElementById("error-text").textContent = "";
-            nameGroup.classList.remove('error');
-        }
-    }
-    function validateUrl(url) {
-        if (url === "") {
-            surfaceError("url must not be empty");
-            return false
-        }
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            surfaceError("url must start with http:// or https:// or mo/");
-            return false
-        }
-        // can't be longer than 2000 characters
-        if (url.length > 2000) {
-            surfaceError("url must be 2000 characters or less");
-            return false
-        }
-        return true;
-    }
-    function validateName(name) {
-        const validRegex = /^[a-zA-Z0-9_-]+$/;
-        if (name.length > 255) {
-            surfaceError("Name must be 255 characters or less.");
-            return false;
-        }
-        if (name === '____reserved') {
-            surfaceError("____reserved is... well... reserved.");
-            return false;
-        }
-        if (name === '' || validRegex.test(name)) {
-            return true;
-        } else {
-            surfaceError("Only letters, numbers, _, and - are allowed in the mo/ path.");
-            return false;
-        }
-    }
+
+
 
     document.getElementById('submit').addEventListener('click', function () {
-        let name = document.getElementById('name').value;
-        let url = document.getElementById('url').value;
+        let name = nameInput.value;
+        let url = urlInput.value;
         // Sanitize name and url
         name = name.trim();
         url = url.trim();
@@ -77,6 +73,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: JSON.stringify({ name, url }),
             })
+                .then(response => {
+                    if (!response.ok) {
+                        // Body will be a text string
+                        return response.text().then(text => {
+                            throw new Error(text);
+                        });
+                    }
+                })
                 .then(() => {
                     alert('mo/' + name + " created successfully!");
                     // Clear the form
@@ -84,11 +88,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('url').value = '';
                 })
                 .catch((error) => {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again: ' + error.message);
+                    surfaceError(error.message);
                 });
         } else {
-            alert('Please fill in both fields.');
+            surfaceError("Both fields must not be empty");
         }
     });
     // Add event listener for the "See Your Mo Links" link
