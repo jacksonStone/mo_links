@@ -15,24 +15,49 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     const nameInput = document.getElementById('name');
     const nameGroup = document.getElementById('name-group');
-
-    nameInput.addEventListener('input', validateName);
-
-    function validateName() {
-        const name = nameInput.value;
+    const urlInput = document.getElementById('url');
+    nameInput.addEventListener('input', hideError);
+    urlInput.addEventListener('input', hideError);
+    function surfaceError(message) {
+        document.getElementById("error-text").textContent = message;
+        nameGroup.classList.add('error');
+    }
+    function hideError() {
+        if (validateName(nameInput.value) && validateUrl(urlInput.value)) {
+            document.getElementById("error-text").textContent = "";
+            nameGroup.classList.remove('error');
+        }
+    }
+    function validateUrl(url) {
+        if (url === "") {
+            surfaceError("url must not be empty");
+            return false
+        }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            surfaceError("url must start with http:// or https:// or mo/");
+            return false
+        }
+        // can't be longer than 2000 characters
+        if (url.length > 2000) {
+            surfaceError("url must be 2000 characters or less");
+            return false
+        }
+        return true;
+    }
+    function validateName(name) {
         const validRegex = /^[a-zA-Z0-9_-]+$/;
+        if (name.length > 255) {
+            surfaceError("Name must be 255 characters or less.");
+            return false;
+        }
         if (name === '____reserved') {
-            document.getElementById("error-text").textContent = "____reserved is... well... reserved.";
-            nameGroup.classList.add('error');
+            surfaceError("____reserved is... well... reserved.");
             return false;
         }
         if (name === '' || validRegex.test(name)) {
-            // insert error message
-            nameGroup.classList.remove('error');
             return true;
         } else {
-            document.getElementById("error-text").textContent = "Only letters, numbers, _, and - are allowed.";
-            nameGroup.classList.add('error');
+            surfaceError("Only letters, numbers, _, and - are allowed in the mo/ path.");
             return false;
         }
     }
@@ -43,7 +68,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // Sanitize name and url
         name = name.trim();
         url = url.trim();
-        if (validateName() && name && url) {
+        if (validateName(name) && validateUrl(url) && name && url) {
+            hideError()
             fetch(root + '/____reserved/api/add', {
                 method: 'POST',
                 headers: {
@@ -59,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch((error) => {
                     console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
+                    alert('An error occurred. Please try again: ' + error.message);
                 });
         } else {
             alert('Please fill in both fields.');
