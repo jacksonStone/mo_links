@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"unicode"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -81,9 +80,6 @@ func AddLink(url string, name string, userId int32) error {
 func validUrl(url string) error {
 	if url == "" {
 		return errors.New("url must not be empty")
-	}
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		return errors.New("url must start with http:// or https://")
 	}
 	// can't be longer than 2000 charecters
 	if len(url) > 2000 {
