@@ -27,18 +27,7 @@ type LoginRequest struct {
 func main() {
 	initializeDB()
 	InitAuth()
-	// cookie, err := Auth.AttemptLoginAndGetCookie("1", "password")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// } else {
-	// 	fmt.Println("cookie:", cookie)
-	// 	decryptedCookie, err := Auth.AttemptCookieDecryption(cookie)
-	// 	if err != nil {
-	// 		fmt.Println("Error decrypting cookie:", err)
-	// 	} else {
-	// 		fmt.Println("Decrypted Cookie:", decryptedCookie)
-	// 	}
-	// }
+
 	http.HandleFunc("/____reserved/privacy_policy", getPrivacyPolicyEndpoint)
 	http.HandleFunc("/____reserved/api/login", loginEndpoint)
 	http.HandleFunc("/____reserved/login_page", loginPageEndpoint)
@@ -54,7 +43,16 @@ func main() {
 }
 
 func faviconEndpoint(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "static/logo-16.png")
+	// Set appropriate content type
+	w.Header().Set("Content-Type", "image/png")
+	// Cache for forever
+	w.Header().Set("Cache-Control", "public, max-age=31536000")
+	bytes, err := static.ReadFile("static/logo-16.png")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(bytes)
 }
 
 func decodeLink(r *http.Request, userId int32) ([]string, error) {
