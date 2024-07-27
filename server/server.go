@@ -42,17 +42,31 @@ func main() {
 	http.ListenAndServe(":3003", nil)
 }
 
-func faviconEndpoint(w http.ResponseWriter, r *http.Request) {
-	// Set appropriate content type
-	w.Header().Set("Content-Type", "image/png")
-	// Cache for forever
-	w.Header().Set("Cache-Control", "public, max-age=31536000")
-	bytes, err := static.ReadFile("static/logo-16.png")
+func returnStaticFile(w http.ResponseWriter, path string) {
+	bytes, err := static.ReadFile(path)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(bytes)
+}
+
+func faviconEndpoint(w http.ResponseWriter, r *http.Request) {
+	// Set appropriate content type
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "public, max-age=31536000")
+	returnStaticFile(w, "static/logo-16.png")
+}
+func serveHomePage(w http.ResponseWriter) {
+	returnStaticFile(w, "static/index.html")
+}
+
+func getPrivacyPolicyEndpoint(w http.ResponseWriter, r *http.Request) {
+	returnStaticFile(w, "static/privacy_policy.html")
+}
+
+func loginPageEndpoint(w http.ResponseWriter, r *http.Request) {
+	returnStaticFile(w, "static/login.html")
 }
 
 func decodeLink(r *http.Request, userId int32) ([]string, error) {
@@ -66,24 +80,6 @@ func decodeLink(r *http.Request, userId int32) ([]string, error) {
 		return []string{}, err
 	}
 	return links, nil
-}
-
-func serveHomePage(w http.ResponseWriter) {
-	bytes, err := static.ReadFile("static/index.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Write(bytes)
-}
-
-func getPrivacyPolicyEndpoint(w http.ResponseWriter, r *http.Request) {
-	bytes, err := static.ReadFile("static/privacy_policy.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Write(bytes)
 }
 
 func getAuthenticatedUser(r *http.Request) (TrimmedUser, error) {
@@ -178,15 +174,6 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
 	http.Redirect(w, r, link, http.StatusFound)
-}
-
-func loginPageEndpoint(w http.ResponseWriter, r *http.Request) {
-	bytes, err := static.ReadFile("static/login.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Write(bytes)
 }
 
 func loginEndpoint(w http.ResponseWriter, r *http.Request) {

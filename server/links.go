@@ -63,5 +63,8 @@ func validName(name string) error {
 	if name == "____reserved" {
 		return errors.New("name must not be '____reserved'")
 	}
+	if name == "_ping" {
+		return errors.New("name must not be '_ping'")
+	}
 	return nil
 }

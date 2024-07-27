@@ -76,6 +76,13 @@
             window.location.href = "/";
         }
     </script>
+        <script>
+            let currentUrl = window.location.origin + window.location.pathname
+            if(!currentUrl.endsWith("/")) {
+                currentUrl += "/"
+            }
+        fetch(currentUrl + "_ping")
+    </script>
 </head>å
 <body>
     <h1>Login / Signup</h1>

@@ -50,6 +50,13 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
     </style>
+    <script>
+        let currentUrl = window.location.origin + window.location.pathname
+        if(!currentUrl.endsWith("/")) {
+            currentUrl += "/"
+        }
+        fetch(currentUrl + "_ping")
+    </script>
 </head>
 <body>
     <h1>This is the Mo Links server, it is a WIP and not yet ready for use.</h1>
