@@ -35,7 +35,9 @@ func NewJaxAuth[User any]() *JaxAuth[User] {
 		UseDevCookie: false,
 	}
 }
-
+func (ja *JaxAuth[User]) GetHashedPasswordFromRawTextPassword(rawTextPassword, saltForPassword string) string {
+	return ja.hash(rawTextPassword + saltForPassword)
+}
 func (ja *JaxAuth[User]) AttemptLoginAndGetCookie(userId string, password string) (string, error) {
 	user, err := ja.GetUser(userId)
 	if err != nil {
@@ -44,7 +46,7 @@ func (ja *JaxAuth[User]) AttemptLoginAndGetCookie(userId string, password string
 
 	hashPassword := ja.GetUserHashPasswordField(user)
 	saltForPassword := ja.GetUserPasswordSaltField(user)
-	if ja.hash(password+saltForPassword) != hashPassword {
+	if ja.GetHashedPasswordFromRawTextPassword(password, saltForPassword) != hashPassword {
 		return "", ja.CreateWrongPasswordError()
 	}
 

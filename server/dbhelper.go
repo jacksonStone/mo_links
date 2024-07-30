@@ -14,6 +14,7 @@ var stmtGetMatchingLinks *sql.Stmt
 var stmtAddLink *sql.Stmt
 var stmtGetUser *sql.Stmt
 var stmtGetUserByEmail *sql.Stmt
+var stmtSignupUserByEmail *sql.Stmt
 
 func initializeDB() {
 	rootPath := "./"
@@ -33,11 +34,23 @@ func initializeDB() {
 	stmtGetMatchingLinks = prepareGetMatchingLinksStmt()
 	stmtGetUser = prepareGetUserStmt()
 	stmtGetUserByEmail = prepareGetUserByEmailStmt()
+	stmtSignupUserByEmail = prepareSignupUserByEmail()
+	fmt.Println("All DB stmts prepared")
+
 }
 
 func prepareAddLinkStmt() *sql.Stmt {
 	stmtAddLink, err := db.Prepare(`
 	INSERT INTO mo_links_entries (url, name, created_by_user_id) VALUES (?, ?, ?)`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return stmtAddLink
+}
+
+func prepareSignupUserByEmail() *sql.Stmt {
+	stmtAddLink, err := db.Prepare(`
+	INSERT INTO mo_links_users (email, password_hash, password_salt, verification_token, verification_token_expires_at) VALUES (?, ?, ?, ?, ?)`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -86,6 +99,14 @@ func dbGetUser(userId int32) (User, error) {
 		return User{}, err
 	}
 	return user, nil
+}
+
+func dbSignupUser(email, passwordHash, passwordSalt, verificationToken string, verificationExperation int32) error {
+	_, err := stmtSignupUserByEmail.Exec(email, passwordHash, passwordSalt, verificationToken, verificationExperation)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func dbGetUserByEmail(email string) (int32, error) {

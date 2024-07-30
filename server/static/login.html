@@ -57,7 +57,7 @@
             const password = document.getElementById("password").value
             fetch("/____reserved/api/login", {
                 method: "POST",
-                body: JSON.stringify({ email, password, next: decodeURIComponent(window.location.search.split("next=")[1]) }),
+                body: JSON.stringify({ email, password }),
             })
               .then((res) => {
                 if (res.status === 200) {
@@ -72,8 +72,26 @@
                 }
               });
         }
-        function signup() {
-            window.location.href = "/";
+        function signup(e) {
+            e.preventDefault();
+            const email = document.getElementById("email").value
+            const password = document.getElementById("password").value
+            fetch("/____reserved/api/signup", {
+                method: "POST",
+                body: JSON.stringify({ email, password }),
+            })
+              .then((res) => {
+                if (res.status === 200) {
+                    console.log("Signup successful")
+                    if(window.location.search.includes("next")) {
+                        window.location.href = decodeURIComponent(window.location.search.split("next=")[1]);
+                    } else {
+                        window.location.href = "/";
+                    }
+                } else {
+                    alert(res.message);
+                }
+              });
         }
     </script>
         <script>
@@ -89,6 +107,6 @@
     <input type="text" id="email" placeholder="Email" />
     <input type="password" id="password" placeholder="Password" />
     <button class="login-btn" onclick="login(event)">Login</button>
-    <button class="signup-btn" onclick="signup(event)">Signup</button>
+    <button class="login-btn" onclick="signup(event)">Signup</button>
 </body>
 </html>

@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //go:embed static
@@ -28,13 +29,14 @@ func main() {
 	initializeDB()
 	InitAuth()
 
-	http.HandleFunc("/____reserved/privacy_policy", getPrivacyPolicyEndpoint)
 	http.HandleFunc("/____reserved/api/login", loginEndpoint)
+	http.HandleFunc("/____reserved/api/signup", signupEndpoint)
+	http.HandleFunc("/____reserved/api/test-cookie", testCookieEndpoint)
+	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
+
+	http.HandleFunc("/____reserved/privacy_policy", getPrivacyPolicyEndpoint)
 	http.HandleFunc("/____reserved/login_page", loginPageEndpoint)
 
-	http.HandleFunc("/____reserved/api/test-cookie", testCookieEndpoint)
-
-	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
 	http.HandleFunc("/favicon.ico", faviconEndpoint)
 
 	http.HandleFunc("/", handleAttemptedMoLink)
@@ -175,7 +177,46 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Expires", "0")
 	http.Redirect(w, r, link, http.StatusFound)
 }
+func signupEndpoint(w http.ResponseWriter, r *http.Request) {
+	// Grab email and password from request
+	// Verify the user does not exist with that email, create user, then login.
+	var request LoginRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	userId, _ := dbGetUserByEmail(request.Email)
+	if userId != 0 {
+		http.Error(w, "User with that email already exists", http.StatusBadRequest)
+		return
+	}
+	salt := Auth.GenerateSalt()
+	verificationToken := Auth.GenerateSalt()
+	hashedPassword := Auth.GetHashedPasswordFromRawTextPassword(request.Password, salt)
+	verificationExpiration := int32(time.Now().Add(7 * 24 * time.Hour).Unix())
 
+	// Create the user
+	err = dbSignupUser(request.Email, hashedPassword, salt, verificationToken, verificationExpiration)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	userId, err = dbGetUserByEmail(request.Email)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	attemptedCookie, err := Auth.AttemptLoginAndGetCookie(strconv.Itoa(int(userId)), request.Password)
+	if err != nil {
+		http.Error(w, "Invalid Login", http.StatusBadRequest)
+		return
+	}
+	// Write the cookie
+	w.Header().Set("Set-Cookie", attemptedCookie)
+	w.Write([]byte("OK"))
+
+}
 func loginEndpoint(w http.ResponseWriter, r *http.Request) {
 	// Grab email and password from request
 	// Check if email and password are correct

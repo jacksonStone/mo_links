@@ -57,10 +57,15 @@
         }
         fetch(currentUrl + "_ping")
     </script>
+    <script>
+        function loginpage(event) {
+            window.location.href = "/____reserved/login_page";
+        }
+    </script>
 </head>
 <body>
     <h1>This is the Mo Links server, it is a WIP and not yet ready for use.</h1>
     <a href="http://mo/test">mo/test</a>
-    <button class="login-btn">Login</button>
+    <button class="login-btn" onclick="loginpage(event)">Login</button>
 </body>
 </html>
