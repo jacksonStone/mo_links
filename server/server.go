@@ -192,7 +192,7 @@ func signupEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	salt := Auth.GenerateSalt()
-	verificationToken := Auth.GenerateSalt()
+	verificationToken := Auth.GenerateSalt() // Get a different random string for the verification token so that the "actual" salt will not be sent over email
 	hashedPassword := Auth.GetHashedPasswordFromRawTextPassword(request.Password, salt)
 	verificationExpiration := int32(time.Now().Add(7 * 24 * time.Hour).Unix())
 
@@ -202,20 +202,8 @@ func signupEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	userId, err = dbGetUserByEmail(request.Email)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	attemptedCookie, err := Auth.AttemptLoginAndGetCookie(strconv.Itoa(int(userId)), request.Password)
-	if err != nil {
-		http.Error(w, "Invalid Login", http.StatusBadRequest)
-		return
-	}
-	// Write the cookie
-	w.Header().Set("Set-Cookie", attemptedCookie)
-	w.Write([]byte("OK"))
 
+	attemptLogin(w, request.Email, request.Password)
 }
 func loginEndpoint(w http.ResponseWriter, r *http.Request) {
 	// Grab email and password from request
@@ -228,16 +216,16 @@ func loginEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	userId, err := dbGetUserByEmail(request.Email)
+	attemptLogin(w, request.Email, request.Password)
+}
+
+func attemptLogin(w http.ResponseWriter, userEmail string, plainTextPassword string) {
+	userId, err := dbGetUserByEmail(userEmail)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if userId == 0 {
-		http.Error(w, "Invalid Login", http.StatusBadRequest)
-		return
-	}
-	attemptedCookie, err := Auth.AttemptLoginAndGetCookie(strconv.Itoa(int(userId)), request.Password)
+	attemptedCookie, err := Auth.AttemptLoginAndGetCookie(strconv.Itoa(int(userId)), plainTextPassword)
 	if err != nil {
 		http.Error(w, "Invalid Login", http.StatusBadRequest)
 		return
