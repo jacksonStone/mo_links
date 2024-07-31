@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"strings"
 	"unicode"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -28,6 +29,9 @@ func addLink(url string, name string, userId int32) error {
 	err = validUrl(url)
 	if err != nil {
 		return err
+	}
+	if !strings.Contains(url, "//") {
+		url = "https://" + url
 	}
 	links, err := dbGetMatchingLinks(userId, name)
 	if err != nil {
@@ -63,8 +67,6 @@ func validName(name string) error {
 	if name == "____reserved" {
 		return errors.New("name must not be '____reserved'")
 	}
-	if name == "_ping" {
-		return errors.New("name must not be '_ping'")
-	}
+
 	return nil
 }

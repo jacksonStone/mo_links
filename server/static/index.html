@@ -113,7 +113,7 @@
             if (!currentUrl.endsWith("/")) {
                 currentUrl += "/"
             }
-            fetch(currentUrl + "_ping")
+            fetch(currentUrl + "____reserved/_ping")
         })
     </script>
     <script>
@@ -134,10 +134,6 @@
             }
             if (name === '____reserved') {
                 surfaceError("____reserved is... well... reserved.");
-                return false;
-            }
-            if (name === '_ping') {
-                surfaceError("_ping is reserved.");
                 return false;
             }
             if (name === '' || validRegex.test(name)) {

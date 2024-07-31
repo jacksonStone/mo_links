@@ -18,10 +18,6 @@ function validateName(name) {
         surfaceError("____reserved is... well... reserved.");
         return false;
     }
-    if (name === '_ping') {
-        surfaceError("_ping is reserved.");
-        return false;
-    }
     if (name === '' || validRegex.test(name)) {
         return true;
     } else {

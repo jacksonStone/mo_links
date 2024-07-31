@@ -24,6 +24,17 @@ type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+type CreateOrganizationRequest struct {
+	Name string `json:"name"`
+}
+type AssignMemberRequest struct {
+	UserId         int32  `json:"userId"`
+	OrganizationId int32  `json:"organizationId"`
+	Role           string `json:"role"`
+}
+type GetOrganizationMembersRequest struct {
+	OrganizationId int32 `json:"organizationId"`
+}
 
 func main() {
 	initializeDB()
@@ -33,6 +44,10 @@ func main() {
 	http.HandleFunc("/____reserved/api/signup", signupEndpoint)
 	http.HandleFunc("/____reserved/api/test-cookie", testCookieEndpoint)
 	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
+	http.HandleFunc("/____reserved/api/organizations", organizationsEndpoint)
+	http.HandleFunc("/____reserved/api/organizations/create", createOrganizationEndpoint)
+	http.HandleFunc("/____reserved/api/organizations/assign-member", assignMemberEndpoint)
+	http.HandleFunc("/____reserved/api/organizations/members", getOrganizationMembersEndpoint)
 
 	http.HandleFunc("/____reserved/privacy_policy", getPrivacyPolicyEndpoint)
 	http.HandleFunc("/____reserved/login_page", loginPageEndpoint)
@@ -232,4 +247,132 @@ func attemptLogin(w http.ResponseWriter, userEmail string, plainTextPassword str
 	// Write the cookie
 	w.Header().Set("Set-Cookie", attemptedCookie)
 	w.Write([]byte("OK"))
+}
+
+func organizationsEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getAuthenticatedUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	organizations, err := getMatchingOrganizations(user.Id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(organizations)
+}
+
+func createOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getAuthenticatedUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	var request CreateOrganizationRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = createOrganization(request.Name, user.Id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getAuthenticatedUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	var request AssignMemberRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, "Invalid organization ID", http.StatusBadRequest)
+		return
+	}
+
+	role, err := getUserRoleInOrganization(user.Id, request.OrganizationId)
+
+	if err != nil {
+		http.Error(w, "Error checking user permissions", http.StatusInternalServerError)
+		return
+	}
+	if role == "" {
+		http.Error(w, "User is not a member of this organization", http.StatusForbidden)
+		return
+	}
+
+	if !roleCanAddRole(role, request.Role) {
+		http.Error(w, "Unauthorized to assign "+request.Role+"s to this organization", http.StatusForbidden)
+		return
+	}
+
+	err = assignMemberToOrganization(request.UserId, request.Role, request.OrganizationId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func getOrganizationMembersEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getAuthenticatedUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	var request GetOrganizationMembersRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(w, "Invalid organization ID", http.StatusBadRequest)
+		return
+	}
+
+	role, err := getUserRoleInOrganization(user.Id, request.OrganizationId)
+
+	if err != nil {
+		http.Error(w, "Error checking user permissions", http.StatusInternalServerError)
+		return
+	}
+	if role == "" {
+		http.Error(w, "User is not a member of this organization", http.StatusForbidden)
+		return
+	}
+
+	if !roleCanViewMembers(role) {
+		http.Error(w, "User is not authorized to view members of this organization", http.StatusForbidden)
+		return
+	}
+
+	members, err := getOrganizationMembers(request.OrganizationId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(members)
 }
