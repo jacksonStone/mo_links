@@ -1,71 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mo Links</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            width: 300px;
+            padding: 20px;
+            font-style: bold;
+            background-color: #6b7281;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
             color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
             display: flex;
             flex-direction: column;
+            margin-bottom: 10px;
+            align-items: flex-start;
+        }
+
+        .input-wrapper {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
+            width: 100%;
         }
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            color: #555;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+
+        .input-group span {
+            margin-right: 5px;
+            font-weight: bold;
+            font-size: 16px;
+            white-space: nowrap;
         }
-        a {
-            color: #777;
-            text-decoration: none;
-            font-size: 1.2em;
-            transition: all 0.3s ease;
+
+        input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
-        a:hover {
-            color: #333;
-            transform: scale(1.1);
+
+        #url {
+            width: 100%;
+            margin-bottom: 10px;
         }
-        .login-btn {
-            background-color: #999;
+
+        .error input {
+            border-color: #ff0000;
+        }
+
+        .error-text {
+            color: #ff0000;
+            font-size: 12px;
+            margin-bottom: 5px;
+            display: none;
+            align-self: flex-start;
+        }
+
+        .error .error-text {
+            display: block;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #6b7281;
             color: white;
             border: none;
-            padding: 10px 20px;
-            font-size: 1em;
+            border-radius: 4px;
             cursor: pointer;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            margin-top: 20px;
+            font-size: 16px;
         }
-        .login-btn:hover {
-            background-color: #777;
-            transform: translateY(-3px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+        button:hover {
+            background-color: #6b7281;
+        }
+
+        .subtle-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #bbbec4;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        .subtle-link:hover {
+            text-decoration: underline;
         }
     </style>
     <script>
-        let currentUrl = window.location.origin + window.location.pathname
-        if(!currentUrl.endsWith("/")) {
-            currentUrl += "/"
-        }
-        fetch(currentUrl + "_ping")
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let currentUrl = window.location.origin + window.location.pathname
+            if (!currentUrl.endsWith("/")) {
+                currentUrl += "/"
+            }
+            fetch(currentUrl + "_ping")
+        })
     </script>
     <script>
-        function loginpage(event) {
-            window.location.href = "/____reserved/login_page";
+
+        function validateUrl(url) {
+            // can't be longer than 2048 characters
+            if (url.length > 2048) {
+                surfaceError("url must be 2048 characters or less");
+                return false
+            }
+            return true;
         }
+        function validateName(name) {
+            const validRegex = /^[a-zA-Z0-9_-]+$/;
+            if (name.length > 255) {
+                surfaceError("Name must be 255 characters or less.");
+                return false;
+            }
+            if (name === '____reserved') {
+                surfaceError("____reserved is... well... reserved.");
+                return false;
+            }
+            if (name === '_ping') {
+                surfaceError("_ping is reserved.");
+                return false;
+            }
+            if (name === '' || validRegex.test(name)) {
+                return true;
+            } else {
+                surfaceError("Only letters, numbers, _, and - are allowed in the mo/ path.");
+                return false;
+            }
+        }
+        function surfaceError(message) {
+            document.getElementById("error-text").textContent = message;
+            document.getElementById('name-group').classList.add('error');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const nameInput = document.getElementById('name');
+            const nameGroup = document.getElementById('name-group');
+            const urlInput = document.getElementById('url');
+            const hideError = () => {
+                if (validateName(nameInput.value) && validateUrl(urlInput.value)) {
+                    document.getElementById("error-text").textContent = "";
+                    nameGroup.classList.remove('error');
+                }
+            }
+
+            nameInput.addEventListener('input', hideError);
+            urlInput.addEventListener('input', hideError);
+            nameInput.value = window.location.pathname.split('/').pop()
+
+            document.getElementById('submit').addEventListener('click', function () {
+                let name = nameInput.value;
+                let url = urlInput.value;
+                // Sanitize name and url
+                name = name.trim();
+                url = url.trim();
+                if (validateName(name) && validateUrl(url) && name && url) {
+                    hideError()
+                    fetch('/____reserved/api/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name, url }),
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                // Body will be a text string
+                                return response.text().then(text => {
+                                    throw new Error(text);
+                                });
+                            }
+                        })
+                        .then(() => {
+                            alert('mo/' + name + " created successfully!");
+                            // Clear the form
+                            document.getElementById('name').value = '';
+                            document.getElementById('url').value = '';
+                        })
+                        .catch((error) => {
+                            surfaceError(error.message);
+                        });
+                } else {
+                    surfaceError("Both fields must not be empty");
+                }
+            });
+        });
     </script>
 </head>
+
 <body>
-    <h1>This is the Mo Links server, it is a WIP and not yet ready for use.</h1>
-    <a href="http://mo/test">mo/test</a>
-    <button class="login-btn" onclick="loginpage(event)">Login</button>
+    <h1>Mo Link does not yet exist. Do you want to create it?</h1>
+    <div class="container">
+        <div class="input-group" id="name-group">
+            <div class="error-text" id="error-text"></div>
+            <div class="input-wrapper">
+                <span><b>mo /</b></span>
+                <input type="text" id="name" placeholder="mo">
+            </div>
+        </div>
+        <input type="url" id="url" placeholder="URL">
+        <button id="submit">Mo Link It</button>
+    </div>
 </body>
+
 </html>

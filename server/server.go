@@ -195,7 +195,6 @@ func signupEndpoint(w http.ResponseWriter, r *http.Request) {
 	verificationToken := Auth.GenerateSalt() // Get a different random string for the verification token so that the "actual" salt will not be sent over email
 	hashedPassword := Auth.GetHashedPasswordFromRawTextPassword(request.Password, salt)
 	verificationExpiration := int32(time.Now().Add(7 * 24 * time.Hour).Unix())
-
 	// Create the user
 	err = dbSignupUser(request.Email, hashedPassword, salt, verificationToken, verificationExpiration)
 	if err != nil {
