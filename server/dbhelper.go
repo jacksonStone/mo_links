@@ -22,6 +22,7 @@ var stmtGetOrganizationMembers *sql.Stmt
 var stmtGetOrganizationByNameAndCreator *sql.Stmt
 var stmtGetUsersOrganizationAndRoleForEach *sql.Stmt
 var stmtSetUserActiveOrganization *sql.Stmt
+var stmtGetOrganizationById *sql.Stmt
 
 func initializeDB() {
 	rootPath := "./"
@@ -49,8 +50,18 @@ func initializeDB() {
 	stmtGetOrganizationByNameAndCreator = prepareGetOrganizationByNameAndCreatorStmt()
 	stmtGetUsersOrganizationAndRoleForEach = prepareGetUsersOrganizationAndRoleForEachStmt()
 	stmtSetUserActiveOrganization = prepareSetUserActiveOrganization()
+	stmtGetOrganizationById = prepareGetOrganizationByIdStmt()
 	fmt.Println("All DB stmts prepared")
 
+}
+
+func prepareGetOrganizationByIdStmt() *sql.Stmt {
+	stmtGetOrganizationById, err := db.Prepare(`
+	SELECT id, name, is_personal, created_by_user_id FROM mo_links_organizations WHERE id = ?`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return stmtGetOrganizationById
 }
 
 func prepareAddLinkStmt() *sql.Stmt {
@@ -110,7 +121,7 @@ func prepareGetUserByEmailStmt() *sql.Stmt {
 
 func prepareGetMatchingOrganizationsStmt() *sql.Stmt {
 	stmt, err := db.Prepare(`
-    SELECT o.id, o.name FROM mo_links_organizations o
+    SELECT o.id, o.name, o.is_personal, o.created_by_user_id FROM mo_links_organizations o
     JOIN mo_links_organization_memberships m ON o.id = m.organization_id
     WHERE m.user_id = ?`)
 	if err != nil {
@@ -121,7 +132,7 @@ func prepareGetMatchingOrganizationsStmt() *sql.Stmt {
 
 func prepareGetOrganizationByNameAndCreatorStmt() *sql.Stmt {
 	stmt, err := db.Prepare(`
-    SELECT id, name FROM mo_links_organizations WHERE name = ? AND created_by_user_id = ?`)
+    SELECT id, name, is_personal, created_by_user_id FROM mo_links_organizations WHERE name = ? AND created_by_user_id = ?`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -174,7 +185,7 @@ func prepareGetUsersOrganizationAndRoleForEachStmt() *sql.Stmt {
 func dbGetOrganizationByNameAndCreator(name string, userId int64) (Organization, error) {
 	row := stmtGetOrganizationByNameAndCreator.QueryRow(name, userId)
 	var organization Organization
-	err := row.Scan(&organization.Id, &organization.Name)
+	err := row.Scan(&organization.Id, &organization.Name, &organization.IsPersonal, &organization.CreatedByUserId)
 	if err != nil {
 		return Organization{}, err
 	}
@@ -190,7 +201,7 @@ func dbGetMatchingOrganizations(userId int64) ([]Organization, error) {
 	var organizations []Organization
 	for rows.Next() {
 		var org Organization
-		err := rows.Scan(&org.Id, &org.Name)
+		err := rows.Scan(&org.Id, &org.Name, &org.IsPersonal, &org.CreatedByUserId)
 		if err != nil {
 			return []Organization{}, err
 		}
@@ -218,6 +229,13 @@ func txCreateOrganizationAndOwnerMembership(tx *sql.Tx, name string, userId int6
 
 	// Set the user's active organization to the newly created organization
 	_, err = tx.Stmt(stmtSetUserActiveOrganization).Exec(orgId, userId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func dbSetUserActiveOrganization(userId int64, organizationId int64) error {
+	_, err := stmtSetUserActiveOrganization.Exec(organizationId, userId)
 	if err != nil {
 		return err
 	}
@@ -326,6 +344,16 @@ func dbGetUserByEmail(email string) (int64, error) {
 		return 0, err
 	}
 	return userId, nil
+}
+
+func dbGetOrganizationById(organizationId int64) (Organization, error) {
+	row := stmtGetOrganizationById.QueryRow(organizationId)
+	var organization Organization
+	err := row.Scan(&organization.Id, &organization.Name, &organization.IsPersonal, &organization.CreatedByUserId)
+	if err != nil {
+		return Organization{}, err
+	}
+	return organization, nil
 }
 
 func dbGetMatchingLinks(organizationId int64, name string) ([]string, error) {

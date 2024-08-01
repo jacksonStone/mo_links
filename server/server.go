@@ -40,6 +40,9 @@ type AssignMemberRequest struct {
 type GetOrganizationMembersRequest struct {
 	OrganizationId int64 `json:"organizationId"`
 }
+type UpdateActiveOrganizationRequest struct {
+	OrganizationId int64 `json:"organizationId"`
+}
 
 func main() {
 	initializeDB()
@@ -50,6 +53,7 @@ func main() {
 	http.HandleFunc("/____reserved/api/test-cookie", testCookieEndpoint)
 	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
 	http.HandleFunc("/____reserved/api/organizations", organizationsEndpoint)
+	http.HandleFunc("/____reserved/api/organization/make-active", makeActiveOrganizationEndpoint)
 	http.HandleFunc("/____reserved/api/organization/create", createOrganizationEndpoint)
 	http.HandleFunc("/____reserved/api/organization/assign-member", assignMemberEndpoint)
 	http.HandleFunc("/____reserved/api/organization/members", getOrganizationMembersEndpoint)
@@ -314,11 +318,6 @@ func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err != nil {
-		http.Error(w, "Invalid organization ID", http.StatusBadRequest)
-		return
-	}
-
 	role, err := getUserRoleInOrganization(user.Id, request.OrganizationId)
 
 	if err != nil {
@@ -327,6 +326,12 @@ func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 	if role == "" {
 		http.Error(w, "User is not a member of this organization", http.StatusForbidden)
+		return
+	}
+
+	org, _ := getOrganizationById(request.OrganizationId)
+	if org.IsPersonal {
+		http.Error(w, "Cannot assign members to personal organization", http.StatusBadRequest)
 		return
 	}
 
@@ -342,6 +347,43 @@ func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getAuthenticatedUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	var request UpdateActiveOrganizationRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if request.OrganizationId == 0 {
+		http.Error(w, "must provide target organization ID", http.StatusBadRequest)
+		return
+	}
+
+	organizations, err := getMatchingOrganizations(user.Id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// If we are in that org, we can assign it as our active org
+	for _, org := range organizations {
+		if org.Id == request.OrganizationId {
+			err = dbSetUserActiveOrganization(user.Id, request.OrganizationId)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+	}
+	http.Error(w, "user is not a member of that organization", http.StatusForbidden)
 }
 
 func getOrganizationMembersEndpoint(w http.ResponseWriter, r *http.Request) {

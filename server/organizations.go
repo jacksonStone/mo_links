@@ -7,8 +7,10 @@ import (
 )
 
 type Organization struct {
-	Id   int64
-	Name string
+	Id              int64
+	Name            string
+	IsPersonal      bool
+	CreatedByUserId int64
 }
 type OrganizationMember struct {
 	OrganizationId   int64
@@ -84,6 +86,9 @@ func getUserRoleInOrganization(userId int64, organizationId int64) (string, erro
 		}
 	}
 	return "", nil
+}
+func getOrganizationById(organizationId int64) (Organization, error) {
+	return dbGetOrganizationById(organizationId)
 }
 func roleCanAddRole(userRole string, targetRole string) bool {
 	if targetRole == RoleAdmin || targetRole == RoleOwner {
