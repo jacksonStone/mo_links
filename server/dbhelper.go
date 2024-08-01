@@ -12,7 +12,6 @@ import (
 var db *sql.DB
 var stmtGetMatchingLinks *sql.Stmt
 var stmtAddLink *sql.Stmt
-var stmtGetUser *sql.Stmt
 var stmtGetUserByEmail *sql.Stmt
 var stmtSignupUserByEmail *sql.Stmt
 var stmtGetMatchingOrganizations *sql.Stmt
@@ -21,7 +20,6 @@ var stmtAssignMemberToOrganization *sql.Stmt
 var stmtGetOrganizationMembers *sql.Stmt
 var stmtGetOrganizationByNameAndCreator *sql.Stmt
 var stmtGetUsersOrganizationAndRoleForEach *sql.Stmt
-var stmtSetUserActiveOrganization *sql.Stmt
 var stmtGetOrganizationById *sql.Stmt
 
 func initializeDB() {
@@ -41,7 +39,6 @@ func initializeDB() {
 	initUserQueries(db)
 	stmtAddLink = prepareAddLinkStmt()
 	stmtGetMatchingLinks = prepareGetMatchingLinksStmt()
-	stmtGetUser = prepareGetUserStmt()
 	stmtGetUserByEmail = prepareGetUserByEmailStmt()
 	stmtSignupUserByEmail = prepareSignupUserByEmail()
 	stmtGetMatchingOrganizations = prepareGetMatchingOrganizationsStmt()
@@ -50,7 +47,6 @@ func initializeDB() {
 	stmtGetOrganizationMembers = prepareGetOrganizationMembersStmt()
 	stmtGetOrganizationByNameAndCreator = prepareGetOrganizationByNameAndCreatorStmt()
 	stmtGetUsersOrganizationAndRoleForEach = prepareGetUsersOrganizationAndRoleForEachStmt()
-	stmtSetUserActiveOrganization = prepareSetUserActiveOrganization()
 	stmtGetOrganizationById = prepareGetOrganizationByIdStmt()
 	fmt.Println("All DB stmts prepared")
 
@@ -74,14 +70,6 @@ func prepareAddLinkStmt() *sql.Stmt {
 	return stmtAddLink
 }
 
-func prepareSetUserActiveOrganization() *sql.Stmt {
-	stmtSetUserActiveOrganization, err := db.Prepare(`
-	UPDATE mo_links_users SET active_organization_id = ? WHERE id = ?`)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return stmtSetUserActiveOrganization
-}
 func prepareSignupUserByEmail() *sql.Stmt {
 	stmtAddLink, err := db.Prepare(`
 	INSERT INTO mo_links_users (email, password_hash, password_salt, verification_token, verification_token_expires_at) VALUES (?, ?, ?, ?, ?)`)
@@ -100,15 +88,6 @@ func prepareGetMatchingLinksStmt() *sql.Stmt {
 		log.Fatal(err)
 	}
 	return stmtGetMatchingLinks
-}
-
-func prepareGetUserStmt() *sql.Stmt {
-	stmtGetUser, err := db.Prepare(`
-	SELECT id, email, password_hash, password_salt, active_organization_id FROM mo_links_users WHERE id = ? LIMIT 1`)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return stmtGetUser
 }
 
 func prepareGetUserByEmailStmt() *sql.Stmt {
@@ -229,19 +208,13 @@ func txCreateOrganizationAndOwnerMembership(tx *sql.Tx, name string, userId int6
 	}
 
 	// Set the user's active organization to the newly created organization
-	_, err = tx.Stmt(stmtSetUserActiveOrganization).Exec(orgId, userId)
+	_, err = tx.Stmt(setUserActiveOrganizationStmt).Exec(orgId, userId)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func dbSetUserActiveOrganization(userId int64, organizationId int64) error {
-	_, err := stmtSetUserActiveOrganization.Exec(organizationId, userId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+
 func dbCreateOrganizationAndOwnerMembership(name string, userId int64) error {
 	tx, err := db.Begin()
 	if err != nil {
@@ -307,16 +280,6 @@ func dbGetUsersOrganizationAndRoleForEach(userId int64) ([]OrganizationMember, e
 	return members, nil
 }
 
-func dbGetUser(userId int64) (User, error) {
-	row := stmtGetUser.QueryRow(userId)
-	var user User
-	err := row.Scan(&user.id, &user.email, &user.hashedPassword, &user.salt, &user.activeOrganizationId)
-	if err != nil {
-		return User{}, err
-	}
-	return user, nil
-}
-
 func dbSignupUser(email, passwordHash, passwordSalt, verificationToken string, verificationExperation int64) error {
 	tx, err := db.Begin()
 	if err != nil {
@@ -336,6 +299,8 @@ func dbSignupUser(email, passwordHash, passwordSalt, verificationToken string, v
 
 	return tx.Commit()
 }
+
+// TODO You ar emigrate user methods to the user file
 
 func dbGetUserByEmail(email string) (int64, error) {
 	row := stmtGetUserByEmail.QueryRow(email)

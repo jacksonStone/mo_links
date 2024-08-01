@@ -1,8 +1,6 @@
 package main
 
 // TODO Leverage organization endpoints
-// TODO Configure mo links match to only match against active organization for the user, maybe package that into the cookie?
-//     SUB TODO: Make sure that the user can configure a org in focus
 // TODO Create an easy UI to swap between organizations
 
 import (
@@ -10,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -50,25 +49,47 @@ func main() {
 
 	http.HandleFunc("/____reserved/api/login", loginEndpoint)
 	http.HandleFunc("/____reserved/api/signup", signupEndpoint)
-	http.HandleFunc("/____reserved/api/test-cookie", testCookieEndpoint)
+	http.HandleFunc("/____reserved/api/test_cookie", testCookieEndpoint)
 	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
 	http.HandleFunc("/____reserved/api/me", meEndpoint)
 	http.HandleFunc("/____reserved/api/organizations", organizationsEndpoint)
-	http.HandleFunc("/____reserved/api/organization/make-active", makeActiveOrganizationEndpoint)
+	http.HandleFunc("/____reserved/api/organization/make_active", makeActiveOrganizationEndpoint)
 	http.HandleFunc("/____reserved/api/organization/create", createOrganizationEndpoint)
-	http.HandleFunc("/____reserved/api/organization/assign-member", assignMemberEndpoint)
+	http.HandleFunc("/____reserved/api/organization/assign_member", assignMemberEndpoint)
 	http.HandleFunc("/____reserved/api/organization/members", getOrganizationMembersEndpoint)
 
+	http.HandleFunc("/____reserved/create_organization", getPrivacyPolicyEndpoint)
+	http.HandleFunc("/____reserved/edit_organization", getPrivacyPolicyEndpoint)
 	http.HandleFunc("/____reserved/privacy_policy", getPrivacyPolicyEndpoint)
 	http.HandleFunc("/____reserved/login_page", loginPageEndpoint)
 
+	http.HandleFunc("/____reserved/static/", serveStaticFiles)
 	http.HandleFunc("/favicon.ico", faviconEndpoint)
 
 	http.HandleFunc("/", handleAttemptedMoLink)
 
-	http.ListenAndServe(":3003", nil)
+	err := http.ListenAndServe(":3003", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
-
+func serveStaticFiles(w http.ResponseWriter, r *http.Request) {
+	if strings.HasSuffix(r.URL.Path, ".css") {
+		w.Header().Set("Content-Type", "text/css")
+	}
+	if strings.HasSuffix(r.URL.Path, ".js") {
+		w.Header().Set("Content-Type", "text/javascript")
+	}
+	if strings.HasSuffix(r.URL.Path, ".png") {
+		w.Header().Set("Cache-Control", "public, max-age=31536000")
+		w.Header().Set("Content-Type", "image/png")
+	}
+	if strings.HasSuffix(r.URL.Path, ".svg") {
+		w.Header().Set("Cache-Control", "public, max-age=31536000")
+		w.Header().Set("Content-Type", "image/svg+xml")
+	}
+	returnStaticFile(w, strings.TrimPrefix(r.URL.Path, "/____reserved/"))
+}
 func returnStaticFile(w http.ResponseWriter, path string) {
 	bytes, err := static.ReadFile(path)
 	if err != nil {

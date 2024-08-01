@@ -3,53 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mo Links</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            color: #555;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
-        a {
-            color: #777;
-            text-decoration: none;
-            font-size: 1.2em;
-            transition: all 0.3s ease;
-        }
-        a:hover {
-            color: #333;
-            transform: scale(1.1);
-        }
-        .login-btn {
-            background-color: #999;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1em;
-            cursor: pointer;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-        }
-        .login-btn:hover {
-            background-color: #777;
-            transform: translateY(-3px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-    </style>
+    <title>Mo Links: Login</title>
     <script>
         function login(e) {
             e.preventDefault();
@@ -94,13 +48,7 @@
               });
         }
     </script>
-        <script>
-            let currentUrl = window.location.origin + window.location.pathname
-            if(!currentUrl.endsWith("/")) {
-                currentUrl += "/"
-            }
-        fetch(currentUrl + "____reserved/_ping")
-    </script>
+    <script src="____reserved/static/ping.js"></script>
 </head>å
 <body>
     <h1>Login / Signup</h1>
