@@ -112,6 +112,8 @@
                 <tr>
                     <th>Name</th>
                     <th>URL</th>
+                    <th>Organization</th>
+                    <th>Views</th>
                 </tr>
             </thead>
             <tbody id="links-list">
@@ -122,16 +124,32 @@
 
     <script>
         // Add this function to update the links table
-        function updateLinksTable(links) {
+        function updateLinksTable(details) {
+            const links = details.MoLinks
+            const memberships = details.Memberships
             const linksList = document.getElementById('links-list');
             linksList.innerHTML = '';
             links.forEach(link => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td><a href="https://mo/${link.Name}" target="_blank">mo/${link.Name}</a></td>
-                    <td><a href="${link.Url}" target="_blank">${link.Url}</a></td>
+                    <td><a href="#" class="copy-link" data-link="mo/${link.Name}"><span class="clipboard-icon" title="Click to copy">📋</span>mo/${link.Name}</a></td>
+                    <td><a href="${link.Url}" target="_blank" class="truncate">${link.Url}</a></td>
+                    <td>${memberships.find(membership => membership.OrganizationId === link.OrganizationId).OrganizationName}</td>
+                    <td>${link.Views}</td>
                 `;
                 linksList.appendChild(row);
+            });
+            // Add click event listeners to copy links
+            document.querySelectorAll('.copy-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const textToCopy = this.getAttribute('data-link');
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        alert('Copied to clipboard: ' + textToCopy);
+                    }).catch(err => {
+                        console.error('Failed to copy text: ', err);
+                    });
+                });
             });
         }
 
@@ -139,7 +157,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             fetch('/____reserved/api/me')
                 .then(response => response.json())
-                .then(details => updateLinksTable(details.MoLinks))
+                .then(details => updateLinksTable(details))
                 .catch(error => console.error('Error fetching links:', error));
         });
     </script>

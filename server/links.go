@@ -18,7 +18,20 @@ func getMatchingLinks(organizationId int64, name string) ([]string, error) {
 	if len(name) > 255 {
 		return []string{}, errors.New("name must be 255 characters or less")
 	}
-	return dbGetMatchingLinks(organizationId, name)
+	links, err := dbGetMatchingLinks(organizationId, name)
+	if err != nil {
+		return []string{}, err
+	}
+	if len(links) == 0 {
+		return []string{}, nil
+	}
+	if len(links) > 1 {
+		return []string{}, errors.New("multiple matches")
+	}
+
+	match := links[0]
+	go dbIncrementViewCountOfLink(organizationId, name)
+	return []string{match}, nil
 }
 
 func addLink(url string, name string, userId int64, activeOrganizationId int64) error {
@@ -38,7 +51,7 @@ func addLink(url string, name string, userId int64, activeOrganizationId int64) 
 		return err
 	}
 	if len(links) > 0 {
-		return errors.New("link already exists")
+		return errors.New("link already exists for that organization")
 	}
 	return dbAddLink(url, name, userId, activeOrganizationId)
 }

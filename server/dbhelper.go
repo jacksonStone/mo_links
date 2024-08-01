@@ -21,6 +21,7 @@ var stmtGetOrganizationMembers *sql.Stmt
 var stmtGetOrganizationByNameAndCreator *sql.Stmt
 var stmtGetUsersOrganizationAndRoleForEach *sql.Stmt
 var stmtGetOrganizationById *sql.Stmt
+var stmtIncrementViewCountOfLink *sql.Stmt
 
 func initializeDB() {
 	rootPath := "./"
@@ -48,6 +49,7 @@ func initializeDB() {
 	stmtGetOrganizationByNameAndCreator = prepareGetOrganizationByNameAndCreatorStmt()
 	stmtGetUsersOrganizationAndRoleForEach = prepareGetUsersOrganizationAndRoleForEachStmt()
 	stmtGetOrganizationById = prepareGetOrganizationByIdStmt()
+	stmtIncrementViewCountOfLink = prepareIncrementViewCountOfLinkStmt()
 	fmt.Println("All DB stmts prepared")
 
 }
@@ -59,6 +61,15 @@ func prepareGetOrganizationByIdStmt() *sql.Stmt {
 		log.Fatal(err)
 	}
 	return stmtGetOrganizationById
+}
+func prepareIncrementViewCountOfLinkStmt() *sql.Stmt {
+	stmt, err := db.Prepare(`
+    UPDATE mo_links_entries SET views = views + 1 
+    WHERE organization_id = ? AND name = ?`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return stmt
 }
 
 func prepareAddLinkStmt() *sql.Stmt {
@@ -160,6 +171,11 @@ func prepareGetUsersOrganizationAndRoleForEachStmt() *sql.Stmt {
 		log.Fatal(err)
 	}
 	return stmt
+}
+
+func dbIncrementViewCountOfLink(organizationId int64, name string) error {
+	_, err := stmtIncrementViewCountOfLink.Exec(organizationId, name)
+	return err
 }
 
 func dbGetOrganizationByNameAndCreator(name string, userId int64) (Organization, error) {

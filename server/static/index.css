@@ -163,3 +163,27 @@ th {
     background-color: #f2f2f2;
     font-weight: bold;
 }
+
+.clipboard-icon {
+    margin-right: 5px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.copy-link {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: center;
+}
+
+.copy-link:hover {
+    text-decoration: underline;
+}
+.truncate {
+    max-width: 200px; /* Adjust this value as needed */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
