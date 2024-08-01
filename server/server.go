@@ -1,5 +1,10 @@
 package main
 
+// TODO Leverage organization endpoints
+// TODO Configure mo links match to only match against active organization for the user, maybe package that into the cookie?
+//     SUB TODO: Make sure that the user can configure a org in focus
+// TODO Create an easy UI to swap between organizations
+
 import (
 	"embed"
 	"encoding/json"
@@ -28,12 +33,12 @@ type CreateOrganizationRequest struct {
 	Name string `json:"name"`
 }
 type AssignMemberRequest struct {
-	UserId         int32  `json:"userId"`
-	OrganizationId int32  `json:"organizationId"`
+	UserId         int64  `json:"userId"`
+	OrganizationId int64  `json:"organizationId"`
 	Role           string `json:"role"`
 }
 type GetOrganizationMembersRequest struct {
-	OrganizationId int32 `json:"organizationId"`
+	OrganizationId int64 `json:"organizationId"`
 }
 
 func main() {
@@ -45,9 +50,9 @@ func main() {
 	http.HandleFunc("/____reserved/api/test-cookie", testCookieEndpoint)
 	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
 	http.HandleFunc("/____reserved/api/organizations", organizationsEndpoint)
-	http.HandleFunc("/____reserved/api/organizations/create", createOrganizationEndpoint)
-	http.HandleFunc("/____reserved/api/organizations/assign-member", assignMemberEndpoint)
-	http.HandleFunc("/____reserved/api/organizations/members", getOrganizationMembersEndpoint)
+	http.HandleFunc("/____reserved/api/organization/create", createOrganizationEndpoint)
+	http.HandleFunc("/____reserved/api/organization/assign-member", assignMemberEndpoint)
+	http.HandleFunc("/____reserved/api/organization/members", getOrganizationMembersEndpoint)
 
 	http.HandleFunc("/____reserved/privacy_policy", getPrivacyPolicyEndpoint)
 	http.HandleFunc("/____reserved/login_page", loginPageEndpoint)
@@ -86,13 +91,14 @@ func loginPageEndpoint(w http.ResponseWriter, r *http.Request) {
 	returnStaticFile(w, "static/login.html")
 }
 
-func decodeLink(r *http.Request, userId int32) ([]string, error) {
+func decodeLink(r *http.Request, organizationId int64) ([]string, error) {
 
 	path := strings.TrimPrefix(r.URL.Path, "/")
 	if path == "" {
 		return []string{}, nil
 	}
-	links, err := getMatchingLinks(userId, path)
+	links, err := getMatchingLinks(organizationId, path)
+	fmt.Println(links)
 	if err != nil {
 		return []string{}, err
 	}
@@ -149,7 +155,7 @@ func addLinkEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = addLink(request.Url, request.Name, user.Id)
+	err = addLink(request.Url, request.Name, user.Id, user.ActiveOrganizationId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusExpectationFailed)
 		return
@@ -166,6 +172,11 @@ func testCookieEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
+	// For when running locally without the reverse proxy
+	if strings.HasSuffix(r.URL.Path, "/____reserved/_ping") {
+		w.Write([]byte("OK"))
+		return
+	}
 	user, err := getAuthenticatedUser(r)
 	if err != nil {
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -174,7 +185,7 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/____reserved/login_page?next="+url.QueryEscape(r.URL.Path), http.StatusFound)
 		return
 	}
-	links, err := decodeLink(r, user.Id)
+	links, err := decodeLink(r, user.ActiveOrganizationId)
 	if err != nil {
 		// TODO improve error handling
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -209,7 +220,7 @@ func signupEndpoint(w http.ResponseWriter, r *http.Request) {
 	salt := Auth.GenerateSalt()
 	verificationToken := Auth.GenerateSalt() // Get a different random string for the verification token so that the "actual" salt will not be sent over email
 	hashedPassword := Auth.GetHashedPasswordFromRawTextPassword(request.Password, salt)
-	verificationExpiration := int32(time.Now().Add(7 * 24 * time.Hour).Unix())
+	verificationExpiration := int64(time.Now().Add(7 * 24 * time.Hour).Unix())
 	// Create the user
 	err = dbSignupUser(request.Email, hashedPassword, salt, verificationToken, verificationExpiration)
 	if err != nil {

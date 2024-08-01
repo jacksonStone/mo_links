@@ -7,15 +7,17 @@ import (
 )
 
 type User struct {
-	salt           string
-	hashedPassword string
-	id             int32
-	email          string
+	salt                 string
+	hashedPassword       string
+	id                   int64
+	email                string
+	activeOrganizationId int64
 }
 
 type TrimmedUser struct {
-	Id    int32  `json:"id"`
-	Email string `json:"email"`
+	Id                   int64  `json:"id"`
+	Email                string `json:"email"`
+	ActiveOrganizationId int64  `json:"activeOrganizationId"`
 }
 
 var Auth *JaxAuth[User]
@@ -38,8 +40,9 @@ func InitAuth() {
 	}
 	Auth.CreateRawCookieContents = func(user User) string {
 		cookieContents, _ := json.Marshal(TrimmedUser{
-			Id:    user.id,
-			Email: user.email,
+			Id:                   user.id,
+			Email:                user.email,
+			ActiveOrganizationId: user.activeOrganizationId,
 		})
 		return string(cookieContents)
 	}
@@ -48,7 +51,7 @@ func InitAuth() {
 		if err != nil {
 			return User{}, err
 		}
-		return dbGetUser(int32(id))
+		return dbGetUser(int64(id))
 	}
 	// TODO: remove this
 	Auth.UseDevCookie = os.Getenv("NODE_ENV") == "development"

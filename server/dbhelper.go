@@ -21,6 +21,7 @@ var stmtAssignMemberToOrganization *sql.Stmt
 var stmtGetOrganizationMembers *sql.Stmt
 var stmtGetOrganizationByNameAndCreator *sql.Stmt
 var stmtGetUsersOrganizationAndRoleForEach *sql.Stmt
+var stmtSetUserActiveOrganization *sql.Stmt
 
 func initializeDB() {
 	rootPath := "./"
@@ -47,19 +48,28 @@ func initializeDB() {
 	stmtGetOrganizationMembers = prepareGetOrganizationMembersStmt()
 	stmtGetOrganizationByNameAndCreator = prepareGetOrganizationByNameAndCreatorStmt()
 	stmtGetUsersOrganizationAndRoleForEach = prepareGetUsersOrganizationAndRoleForEachStmt()
+	stmtSetUserActiveOrganization = prepareSetUserActiveOrganization()
 	fmt.Println("All DB stmts prepared")
 
 }
 
 func prepareAddLinkStmt() *sql.Stmt {
 	stmtAddLink, err := db.Prepare(`
-	INSERT INTO mo_links_entries (url, name, created_by_user_id) VALUES (?, ?, ?)`)
+	INSERT INTO mo_links_entries (url, name, created_by_user_id, organization_id) VALUES (?, ?, ?, ?)`)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return stmtAddLink
 }
 
+func prepareSetUserActiveOrganization() *sql.Stmt {
+	stmtSetUserActiveOrganization, err := db.Prepare(`
+	UPDATE mo_links_users SET active_organization_id = ? WHERE id = ?`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return stmtSetUserActiveOrganization
+}
 func prepareSignupUserByEmail() *sql.Stmt {
 	stmtAddLink, err := db.Prepare(`
 	INSERT INTO mo_links_users (email, password_hash, password_salt, verification_token, verification_token_expires_at) VALUES (?, ?, ?, ?, ?)`)
@@ -71,14 +81,9 @@ func prepareSignupUserByEmail() *sql.Stmt {
 
 func prepareGetMatchingLinksStmt() *sql.Stmt {
 	stmtGetMatchingLinks, err := db.Prepare(`
-	SELECT url, organization_id FROM mo_links_entries 
-	WHERE (
-		created_by_user_id = ? 
-		OR 
-		organization_id IN (
-			SELECT organization_id FROM mo_links_organization_memberships WHERE user_id = ?
-		)
-	) AND name = ? ORDER BY created_at DESC`)
+	SELECT url, organization_id FROM mo_links_entries
+	WHERE organization_id = ?
+	 AND name = ? ORDER BY created_at DESC`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -87,7 +92,7 @@ func prepareGetMatchingLinksStmt() *sql.Stmt {
 
 func prepareGetUserStmt() *sql.Stmt {
 	stmtGetUser, err := db.Prepare(`
-	SELECT id, email, password_hash, password_salt FROM mo_links_users WHERE id = ? LIMIT 1`)
+	SELECT id, email, password_hash, password_salt, active_organization_id FROM mo_links_users WHERE id = ? LIMIT 1`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -125,7 +130,7 @@ func prepareGetOrganizationByNameAndCreatorStmt() *sql.Stmt {
 
 func prepareCreateOrganizationStmt() *sql.Stmt {
 	stmt, err := db.Prepare(`
-    INSERT INTO mo_links_organizations (name, created_by_user_id) VALUES (?, ?)`)
+    INSERT INTO mo_links_organizations (name, created_by_user_id, is_personal) VALUES (?, ?, ?)`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -166,7 +171,7 @@ func prepareGetUsersOrganizationAndRoleForEachStmt() *sql.Stmt {
 	return stmt
 }
 
-func dbGetOrganizationByNameAndCreator(name string, userId int32) (Organization, error) {
+func dbGetOrganizationByNameAndCreator(name string, userId int64) (Organization, error) {
 	row := stmtGetOrganizationByNameAndCreator.QueryRow(name, userId)
 	var organization Organization
 	err := row.Scan(&organization.Id, &organization.Name)
@@ -176,7 +181,7 @@ func dbGetOrganizationByNameAndCreator(name string, userId int32) (Organization,
 	return organization, nil
 }
 
-func dbGetMatchingOrganizations(userId int32) ([]Organization, error) {
+func dbGetMatchingOrganizations(userId int64) ([]Organization, error) {
 	rows, err := stmtGetMatchingOrganizations.Query(userId)
 	if err != nil {
 		return []Organization{}, err
@@ -193,16 +198,48 @@ func dbGetMatchingOrganizations(userId int32) ([]Organization, error) {
 	}
 	return organizations, nil
 }
+func txCreateOrganizationAndOwnerMembership(tx *sql.Tx, name string, userId int64, isPersonal bool) error {
+	// Create the organization
+	result, err := tx.Stmt(stmtCreateOrganization).Exec(name, userId, isPersonal)
+	if err != nil {
+		return err
+	}
 
-func dbCreateOrganization(name string, userId int32) error {
-	_, err := stmtCreateOrganization.Exec(name, userId)
+	orgId, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// Create the membership with Owner role
+	_, err = tx.Stmt(stmtAssignMemberToOrganization).Exec(userId, RoleOwner, orgId)
+	if err != nil {
+		return err
+	}
+
+	// Set the user's active organization to the newly created organization
+	_, err = tx.Stmt(stmtSetUserActiveOrganization).Exec(orgId, userId)
 	if err != nil {
 		return err
 	}
 	return nil
 }
+func dbCreateOrganizationAndOwnerMembership(name string, userId int64) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() // This will be a no-op if the transaction is committed
 
-func dbAssignMemberToOrganization(userId int32, role string, organizationId int32) error {
+	err = txCreateOrganizationAndOwnerMembership(tx, name, userId, false)
+	if err != nil {
+		return err
+	}
+
+	// Commit the transaction
+	return tx.Commit()
+}
+
+func dbAssignMemberToOrganization(userId int64, role string, organizationId int64) error {
 	_, err := stmtAssignMemberToOrganization.Exec(userId, role, organizationId)
 	if err != nil {
 		return err
@@ -210,7 +247,7 @@ func dbAssignMemberToOrganization(userId int32, role string, organizationId int3
 	return nil
 }
 
-func dbGetOrganizationMembers(organizationId int32) ([]OrganizationMember, error) {
+func dbGetOrganizationMembers(organizationId int64) ([]OrganizationMember, error) {
 	rows, err := stmtGetOrganizationMembers.Query(organizationId)
 	if err != nil {
 		return []OrganizationMember{}, err
@@ -227,7 +264,7 @@ func dbGetOrganizationMembers(organizationId int32) ([]OrganizationMember, error
 	}
 	return members, nil
 }
-func dbGetUsersOrganizationAndRoleForEach(userId int32) ([]OrganizationMember, error) {
+func dbGetUsersOrganizationAndRoleForEach(userId int64) ([]OrganizationMember, error) {
 	rows, err := stmtGetUsersOrganizationAndRoleForEach.Query(userId)
 	if err != nil {
 		return nil, err
@@ -251,27 +288,39 @@ func dbGetUsersOrganizationAndRoleForEach(userId int32) ([]OrganizationMember, e
 	return members, nil
 }
 
-func dbGetUser(userId int32) (User, error) {
+func dbGetUser(userId int64) (User, error) {
 	row := stmtGetUser.QueryRow(userId)
 	var user User
-	err := row.Scan(&user.id, &user.email, &user.hashedPassword, &user.salt)
+	err := row.Scan(&user.id, &user.email, &user.hashedPassword, &user.salt, &user.activeOrganizationId)
 	if err != nil {
 		return User{}, err
 	}
 	return user, nil
 }
 
-func dbSignupUser(email, passwordHash, passwordSalt, verificationToken string, verificationExperation int32) error {
-	_, err := stmtSignupUserByEmail.Exec(email, passwordHash, passwordSalt, verificationToken, verificationExperation)
+func dbSignupUser(email, passwordHash, passwordSalt, verificationToken string, verificationExperation int64) error {
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	return nil
+	defer tx.Rollback() // This will be a no-op if the transaction is committed
+
+	userResult, err := tx.Stmt(stmtSignupUserByEmail).Exec(email, passwordHash, passwordSalt, verificationToken, verificationExperation)
+	if err != nil {
+		return err
+	}
+	userId, err := userResult.LastInsertId()
+	if err != nil {
+		return err
+	}
+	txCreateOrganizationAndOwnerMembership(tx, OrgNamePersonal, userId, true)
+
+	return tx.Commit()
 }
 
-func dbGetUserByEmail(email string) (int32, error) {
+func dbGetUserByEmail(email string) (int64, error) {
 	row := stmtGetUserByEmail.QueryRow(email)
-	var userId int32
+	var userId int64
 	err := row.Scan(&userId)
 	if err != nil {
 		return 0, err
@@ -279,8 +328,9 @@ func dbGetUserByEmail(email string) (int32, error) {
 	return userId, nil
 }
 
-func dbGetMatchingLinks(userId int32, name string) ([]string, error) {
-	rows, err := stmtGetMatchingLinks.Query(userId, userId, name)
+func dbGetMatchingLinks(organizationId int64, name string) ([]string, error) {
+	fmt.Println("dbGetMatchingLinks", organizationId, name)
+	rows, err := stmtGetMatchingLinks.Query(organizationId, name)
 	if err != nil {
 		return []string{}, err
 	}
@@ -288,15 +338,15 @@ func dbGetMatchingLinks(userId int32, name string) ([]string, error) {
 	var links []string
 	for rows.Next() {
 		var url string
-		var organizationId int32
+		var organizationId int64
 		rows.Scan(&url, &organizationId)
 		links = append(links, url)
 	}
 	return links, nil
 }
 
-func dbAddLink(url string, name string, userId int32) error {
-	_, err := stmtAddLink.Exec(url, name, userId)
+func dbAddLink(url string, name string, userId int64, activeOrganizationId int64) error {
+	_, err := stmtAddLink.Exec(url, name, userId, activeOrganizationId)
 	if err != nil {
 		return err
 	}

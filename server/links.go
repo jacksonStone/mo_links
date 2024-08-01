@@ -8,9 +8,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func getMatchingLinks(userId int32, name string) ([]string, error) {
-	if userId == 0 {
-		return []string{}, errors.New("userId must be defined")
+func getMatchingLinks(organizationId int64, name string) ([]string, error) {
+	if organizationId == 0 {
+		return []string{}, errors.New("organizationId must be defined")
 	}
 	if name == "" {
 		return []string{}, errors.New("name must be defined")
@@ -18,10 +18,10 @@ func getMatchingLinks(userId int32, name string) ([]string, error) {
 	if len(name) > 255 {
 		return []string{}, errors.New("name must be 255 characters or less")
 	}
-	return dbGetMatchingLinks(userId, name)
+	return dbGetMatchingLinks(organizationId, name)
 }
 
-func addLink(url string, name string, userId int32) error {
+func addLink(url string, name string, userId int64, activeOrganizationId int64) error {
 	err := validName(name)
 	if err != nil {
 		return err
@@ -33,14 +33,14 @@ func addLink(url string, name string, userId int32) error {
 	if !strings.Contains(url, "//") {
 		url = "https://" + url
 	}
-	links, err := dbGetMatchingLinks(userId, name)
+	links, err := dbGetMatchingLinks(activeOrganizationId, name)
 	if err != nil {
 		return err
 	}
 	if len(links) > 0 {
 		return errors.New("link already exists")
 	}
-	return dbAddLink(url, name, userId)
+	return dbAddLink(url, name, userId, activeOrganizationId)
 }
 
 func validUrl(url string) error {

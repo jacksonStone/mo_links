@@ -7,12 +7,12 @@ import (
 )
 
 type Organization struct {
-	Id   int32
+	Id   int64
 	Name string
 }
 type OrganizationMember struct {
-	OrganizationId   int32
-	UserId           int32
+	OrganizationId   int64
+	UserId           int64
 	UserEmail        string
 	OrganizationName string
 	UserRole         string
@@ -24,37 +24,44 @@ const (
 	RoleMember = "Member"
 )
 
-func getMatchingOrganizations(userId int32) ([]Organization, error) {
+const (
+	OrgNamePersonal = "Personal"
+)
+
+func getMatchingOrganizations(userId int64) ([]Organization, error) {
 	if userId == 0 {
 		return []Organization{}, errors.New("userId must be defined")
 	}
 	return dbGetMatchingOrganizations(userId)
 }
 
-func createOrganization(name string, userId int32) error {
+func createOrganization(name string, userId int64) error {
 	err := validOrganizationName(name)
 	if err != nil {
 		return err
 	}
-	org, err := dbGetOrganizationByNameAndCreator(name, userId)
+	org, _ := dbGetOrganizationByNameAndCreator(name, userId)
+	if org.Id != 0 {
+		return errors.New("you have already created an organization with this name")
+	}
+
+	// Create the organization
+	err = dbCreateOrganizationAndOwnerMembership(name, userId)
 	if err != nil {
 		return err
 	}
-	if org.Id != 0 {
-		return errors.New("organization already exists")
-	}
-	return dbCreateOrganization(name, userId)
+	return nil
 }
 
-func assignMemberToOrganization(userId int32, role string, organizationId int32) error {
+func assignMemberToOrganization(userId int64, role string, organizationId int64) error {
 	return dbAssignMemberToOrganization(userId, role, organizationId)
 }
 
-func getUsersOrganizationAndRoleForEach(userId int32) ([]OrganizationMember, error) {
+func getUsersOrganizationAndRoleForEach(userId int64) ([]OrganizationMember, error) {
 	return dbGetUsersOrganizationAndRoleForEach(userId)
 }
 
-func getOrganizationMembers(organizationId int32) ([]OrganizationMember, error) {
+func getOrganizationMembers(organizationId int64) ([]OrganizationMember, error) {
 	return dbGetOrganizationMembers(organizationId)
 }
 
@@ -66,7 +73,7 @@ func validOrganizationName(name string) error {
 	return nil
 }
 
-func getUserRoleInOrganization(userId int32, organizationId int32) (string, error) {
+func getUserRoleInOrganization(userId int64, organizationId int64) (string, error) {
 	memberships, err := getUsersOrganizationAndRoleForEach(userId)
 	if err != nil {
 		return "", err
