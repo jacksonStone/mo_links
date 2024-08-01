@@ -2,8 +2,6 @@ package main
 
 import (
 	"errors"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type Organization struct {

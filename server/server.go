@@ -52,6 +52,7 @@ func main() {
 	http.HandleFunc("/____reserved/api/signup", signupEndpoint)
 	http.HandleFunc("/____reserved/api/test-cookie", testCookieEndpoint)
 	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
+	http.HandleFunc("/____reserved/api/me", meEndpoint)
 	http.HandleFunc("/____reserved/api/organizations", organizationsEndpoint)
 	http.HandleFunc("/____reserved/api/organization/make-active", makeActiveOrganizationEndpoint)
 	http.HandleFunc("/____reserved/api/organization/create", createOrganizationEndpoint)
@@ -94,7 +95,20 @@ func getPrivacyPolicyEndpoint(w http.ResponseWriter, r *http.Request) {
 func loginPageEndpoint(w http.ResponseWriter, r *http.Request) {
 	returnStaticFile(w, "static/login.html")
 }
-
+func meEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getAuthenticatedUser(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	userDetails, err := getUserDetails(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(userDetails)
+}
 func decodeLink(r *http.Request, organizationId int64) ([]string, error) {
 
 	path := strings.TrimPrefix(r.URL.Path, "/")
@@ -179,6 +193,10 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 	// For when running locally without the reverse proxy
 	if strings.HasSuffix(r.URL.Path, "/____reserved/_ping") {
 		w.Write([]byte("OK"))
+		return
+	}
+	if r.URL.Path == "/" {
+		serveHomePage(w)
 		return
 	}
 	user, err := getAuthenticatedUser(r)

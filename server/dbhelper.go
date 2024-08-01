@@ -38,6 +38,7 @@ func initializeDB() {
 		log.Fatal(err)
 	}
 	fmt.Println("DB initialized: " + path)
+	initUserQueries(db)
 	stmtAddLink = prepareAddLinkStmt()
 	stmtGetMatchingLinks = prepareGetMatchingLinksStmt()
 	stmtGetUser = prepareGetUserStmt()
