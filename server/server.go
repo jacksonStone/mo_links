@@ -365,7 +365,6 @@ func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "must provide target organization ID", http.StatusBadRequest)
 		return
 	}
-
 	organizations, err := getMatchingOrganizations(user.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -397,10 +396,6 @@ func getOrganizationMembersEndpoint(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		http.Error(w, "Invalid organization ID", http.StatusBadRequest)
 		return
 	}
 
