@@ -1,7 +1,6 @@
 package main
 
-// TODO Leverage organization endpoints
-// TODO Create an easy UI to swap between organizations
+// TODO Leverage organization endpoints (Still need to be able to add people)
 
 import (
 	"embed"
@@ -58,8 +57,8 @@ func main() {
 	http.HandleFunc("/____reserved/api/organization/assign_member", assignMemberEndpoint)
 	http.HandleFunc("/____reserved/api/organization/members", getOrganizationMembersEndpoint)
 
-	http.HandleFunc("/____reserved/create_organization", getPrivacyPolicyEndpoint)
-	http.HandleFunc("/____reserved/edit_organization", getPrivacyPolicyEndpoint)
+	http.HandleFunc("/____reserved/create_organization", serveCreateOrganizationPage)
+	http.HandleFunc("/____reserved/edit_organization", serveEditOrganizationPage)
 	http.HandleFunc("/____reserved/privacy_policy", getPrivacyPolicyEndpoint)
 	http.HandleFunc("/____reserved/login_page", loginPageEndpoint)
 
@@ -107,6 +106,14 @@ func faviconEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 func serveHomePage(w http.ResponseWriter) {
 	returnStaticFile(w, "static/index.html")
+}
+
+func serveCreateOrganizationPage(w http.ResponseWriter, r *http.Request) {
+	returnStaticFile(w, "static/create_organization.html")
+}
+
+func serveEditOrganizationPage(w http.ResponseWriter, r *http.Request) {
+	returnStaticFile(w, "static/edit_organization.html")
 }
 
 func getPrivacyPolicyEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -303,6 +310,15 @@ func attemptLogin(w http.ResponseWriter, userEmail string, plainTextPassword str
 	w.Write([]byte("OK"))
 }
 
+func refreshCookie(user User, w http.ResponseWriter) {
+	cookie, err := Auth.CreateNewCookie(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Set-Cookie", cookie)
+}
+
 func organizationsEndpoint(w http.ResponseWriter, r *http.Request) {
 	user, err := getAuthenticatedUser(r)
 	if err != nil {
@@ -417,6 +433,13 @@ func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			// Refresh login cookie
+			fullUser, err := Auth.GetUser(strconv.Itoa(int(user.Id)))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			refreshCookie(fullUser, w)
 			w.WriteHeader(http.StatusOK)
 			return
 		}

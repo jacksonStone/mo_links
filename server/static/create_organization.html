@@ -4,22 +4,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="____reserved/static/index.css">
+    <link rel="stylesheet" href="/____reserved/static/index.css">
     <title>Create Organization</title>
-    <script src="____reserved/static/ping.js"></script>
+    <script src="/____reserved/static/ping.js"></script>
 </head>
-
+<script>
+    function createOrganization(event) {
+        event.preventDefault();
+        const name = document.getElementById("name").value;
+        fetch(`/____reserved/api/organization/create`, {
+            method: "POST",
+            body: JSON.stringify({ name }),
+        }).then(response => {
+            if (response.ok) {
+                alert(`Organization: ${name} created successfully`);
+                window.location.href = "/";
+            } else {
+                alert("Failed to create organization");
+            }
+        });
+    }
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("submit").addEventListener("click", createOrganization);
+    });
+</script>
 <body>
     <div class="container">
         <div class="input-group" id="name-group">
             <div class="error-text" id="error-text"></div>
             <div class="input-wrapper">
-                <span><b>mo /</b></span>
+                <span><b>Organization Name: </b></span>
                 <input type="text" id="name" placeholder="mo">
             </div>
         </div>
-        <input type="url" id="url" placeholder="URL">
-        <button id="submit">Mo Link It</button>
+        <button id="submit">Create Organization</button>
     </div>
 </body>
 

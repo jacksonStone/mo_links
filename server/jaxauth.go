@@ -38,18 +38,7 @@ func NewJaxAuth[User any]() *JaxAuth[User] {
 func (ja *JaxAuth[User]) GetHashedPasswordFromRawTextPassword(rawTextPassword, saltForPassword string) string {
 	return ja.hash(rawTextPassword + saltForPassword)
 }
-func (ja *JaxAuth[User]) AttemptLoginAndGetCookie(userId string, password string) (string, error) {
-	user, err := ja.GetUser(userId)
-	if err != nil {
-		return "", err
-	}
-
-	hashPassword := ja.GetUserHashPasswordField(user)
-	saltForPassword := ja.GetUserPasswordSaltField(user)
-	if ja.GetHashedPasswordFromRawTextPassword(password, saltForPassword) != hashPassword {
-		return "", ja.CreateWrongPasswordError()
-	}
-
+func (ja *JaxAuth[User]) CreateNewCookie(user User) (string, error) {
 	cookieContents := ja.CreateRawCookieContents(user)
 	encryptionSecret := ja.GetEncryptionSecret()
 	nonce := getNonce()
@@ -73,6 +62,18 @@ func (ja *JaxAuth[User]) AttemptLoginAndGetCookie(userId string, password string
 		return fmt.Sprintf("%s=%s; Max-Age=%d; SameSite=Strict; Path=/", ja.CookieName, cookieContent, int(ja.Experation.Seconds())), nil
 	}
 	return fmt.Sprintf("%s=%s; HttpOnly; Max-Age=%d; SameSite=Strict; Secure; Path=/", ja.CookieName, cookieContent, int(ja.Experation.Seconds())), nil
+}
+func (ja *JaxAuth[User]) AttemptLoginAndGetCookie(userId string, password string) (string, error) {
+	user, err := ja.GetUser(userId)
+	if err != nil {
+		return "", err
+	}
+	hashPassword := ja.GetUserHashPasswordField(user)
+	saltForPassword := ja.GetUserPasswordSaltField(user)
+	if ja.GetHashedPasswordFromRawTextPassword(password, saltForPassword) != hashPassword {
+		return "", ja.CreateWrongPasswordError()
+	}
+	return ja.CreateNewCookie(user)
 }
 
 func (ja *JaxAuth[User]) AttemptCookieDecryption(rawCookieHeader string) (string, error) {

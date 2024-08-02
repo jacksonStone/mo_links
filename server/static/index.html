@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mo Links</title>
-    <link rel="stylesheet" href="____reserved/static/index.css">
-    <script src="____reserved/static/ping.js"></script>
+    <link rel="stylesheet" href="/____reserved/static/index.css">
+    <script src="/____reserved/static/ping.js"></script>
     <script>
         function validateUrl(url) {
             // can't be longer than 2048 characters
@@ -96,17 +96,26 @@
 
 <body>
     <div class="container">
-        <div class="input-group" id="name-group">
-            <div class="error-text" id="error-text"></div>
-            <div class="input-wrapper">
-                <span><b>mo /</b></span>
-                <input type="text" id="name" placeholder="mo">
+        <div class="form-container">
+            <div class="input-group" id="name-group">
+                <div class="error-text" id="error-text"></div>
+                <div class="input-wrapper">
+                    <span><b>mo /</b></span>
+                    <input type="text" id="name" placeholder="mo">
+                </div>
             </div>
+            <input type="url" id="url" placeholder="URL">
+            <button id="submit">Mo Link It</button>
         </div>
-        <input type="url" id="url" placeholder="URL">
-        <button id="submit">Mo Link It</button>
     </div>
     <div class="links-table">
+        <div class="membership-container">
+            <label for="membership-select">Active organization:</label>
+            <select id="membership-select">
+            </select>
+            <a href="/____reserved/create_organization" class="new-org-link">Create New Organization</a>
+
+        </div>
         <h2>Your Current Links</h2>
         <table>
             <thead>
@@ -153,16 +162,62 @@
                 });
             });
         }
-        function fetchLinks() {
-            fetch('/____reserved/api/me')
-                .then(response => response.json())
-                .then(details => updateLinksTable(details))
-                .catch(error => console.error('Error fetching links:', error));
+
+
+        function hydrateUserDetails(details) {
+            const memberships = details.Memberships;
+            const membershipSelect = document.getElementById('membership-select');
+            memberships.forEach(membership => {
+                const option = document.createElement('option');
+                option.value = membership.OrganizationId;
+                option.textContent = membership.OrganizationName;
+                if (membership.OrganizationId === details.ActiveOrganizationId) {
+                    option.selected = true;
+                }
+                membershipSelect.appendChild(option);
+            });
+        }
+
+        async function fetchLinks() {
+            try {
+                const response = await fetch('/____reserved/api/me')
+                const details = await response.json()
+                updateLinksTable(details)
+                hydrateUserDetails(details)
+            } catch (error) {
+                console.error('Error fetching links:', error);
+            }
+        }
+
+        function handleMembershipChange() {
+            const organizationIdAsString = this.value;
+            const organizationId = parseInt(organizationIdAsString, 10);
+            // Have an alert appear and ask for confirmation first 
+            if (!confirm("This operation will require you to log back in.")) {
+                return;
+            }
+            fetch('/____reserved/api/organization/make_active', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ organizationId }),
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update active organization');
+                }
+                window.location.reload()
+            })
+            .catch(error => {
+                console.error('Error updating active organization:', error);
+            });
         }
 
         // Modify the DOMContentLoaded event listener
-        document.addEventListener('DOMContentLoaded', function () {
-            fetchLinks()
+        document.addEventListener('DOMContentLoaded', async function () {
+            await fetchLinks()
+            // Attach the membership change handler
+            document.getElementById('membership-select').addEventListener('change', handleMembershipChange);
         });
     </script>
 </body>

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
@@ -67,6 +68,7 @@ func prepareSetUserActiveOrganizationStmt(db *sql.DB) {
 	setUserActiveOrganizationStmt = stmt
 }
 func dbSetUserActiveOrganization(userId int64, organizationId int64) error {
+	fmt.Println("Setting user:", userId, " to active organization: ", organizationId)
 	_, err := setUserActiveOrganizationStmt.Exec(organizationId, userId)
 	if err != nil {
 		return err

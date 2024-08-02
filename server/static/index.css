@@ -121,8 +121,39 @@ button {
 }
 
 button:hover {
-    background-color: #6b7281;
+    background-color: #515662;
 }
+
+.membership-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.new-org-link {
+    margin-left: auto;
+    text-decoration: underline;
+    color: #007bff;
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.new-org-link:hover {
+    text-decoration: underline;
+}
+
+.membership-container label {
+    margin-right: 10px;
+}
+
+#membership-select {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
 
 .subtle-link {
     display: block;
@@ -131,12 +162,12 @@ button:hover {
     color: #bbbec4;
     text-decoration: none;
     font-size: 12px;
-    font-weight: bold;
     text-decoration: underline;
 }
 
 .subtle-link:hover {
     text-decoration: underline;
+    font-weight: bold;
 }
 
 .links-table {
@@ -186,4 +217,26 @@ th {
     overflow: hidden;
     text-overflow: ellipsis;
     display: block;
+}
+
+.container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.form-container {
+    min-width: 300px;
+    margin-right: 20px;
+}
+
+.membership-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.membership-container select {
+    width: 100%;
 }
