@@ -36,14 +36,14 @@ func initUserQueries(db *sql.DB) {
 }
 func prepareGetUserMoLinksStmt(db *sql.DB) {
 	stmt, err := db.Prepare(`
-    SELECT id, name, url, organization_id, created_at, views FROM mo_links_entries WHERE created_by_user_id = ?`)
+    SELECT id, name, url, organization_id, created_at, views FROM mo_links_entries WHERE created_by_user_id = ? AND organization_id = ?`)
 	if err != nil {
 		log.Fatal(err)
 	}
 	getUserMoLinksStmt = stmt
 }
-func dbGetUserMoLinks(userId int64) ([]MoLink, error) {
-	rows, err := getUserMoLinksStmt.Query(userId)
+func dbGetUserMoLinks(userId int64, organizationId int64) ([]MoLink, error) {
+	rows, err := getUserMoLinksStmt.Query(userId, organizationId)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func getUserDetails(trimmedUser TrimmedUser) (UserDetails, error) {
 		return UserDetails{}, err
 	}
 	user.Memberships = memberships
-	user.MoLinks, err = dbGetUserMoLinks(trimmedUser.Id)
+	user.MoLinks, err = dbGetUserMoLinks(trimmedUser.Id, trimmedUser.ActiveOrganizationId)
 	if err != nil {
 		return UserDetails{}, err
 	}
