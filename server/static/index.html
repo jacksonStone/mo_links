@@ -110,7 +110,7 @@
     </div>
     <div class="links-table">
         <div class="membership-container">
-            <label for="membership-select">Active organization:</label>
+            <label for="membership-select">Organization:</label>
             <select id="membership-select">
             </select>
             <a href="/____reserved/create_organization" class="new-org-link">Create New Organization</a>
@@ -167,6 +167,7 @@
         function hydrateUserDetails(details) {
             const memberships = details.Memberships;
             const membershipSelect = document.getElementById('membership-select');
+            membershipSelect.innerHTML = '';
             memberships.forEach(membership => {
                 const option = document.createElement('option');
                 option.value = membership.OrganizationId;
@@ -193,7 +194,7 @@
             const organizationIdAsString = this.value;
             const organizationId = parseInt(organizationIdAsString, 10);
             // Have an alert appear and ask for confirmation first 
-            if (!confirm("This operation will require you to log back in.")) {
+            if (!confirm("New Mo Links will be created for this organization. And Mo Links you visit will be those defined within this Organization")) {
                 return;
             }
             fetch('/____reserved/api/organization/make_active', {
