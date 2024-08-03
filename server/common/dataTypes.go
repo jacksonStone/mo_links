@@ -22,6 +22,7 @@ type Organization struct {
 	IsPersonal      bool
 	CreatedByUserId int64
 }
+
 type OrganizationMember struct {
 	OrganizationId   int64
 	UserId           int64
@@ -37,6 +38,7 @@ type UserDetails struct {
 	Memberships          []OrganizationMember
 	MoLinks              []MoLink
 }
+
 type MoLink struct {
 	Id             int64
 	Name           string
@@ -45,6 +47,7 @@ type MoLink struct {
 	CreatedAt      time.Time
 	Views          int64
 }
+
 type MembershipInvite struct {
 	Id              int64     `json:"id"`
 	OrganizationId  int64     `json:"organizationId"`
