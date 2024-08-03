@@ -1,8 +1,7 @@
-package routes
+package http_server
 
 import (
 	"encoding/json"
-	"mo_links/auth"
 	"mo_links/models"
 	"net/http"
 	"net/url"
@@ -14,7 +13,7 @@ type AddLinkRequest struct {
 	Name string `json:"name"`
 }
 
-func InitLinkRoutes() {
+func initializeLinkRoutes() {
 	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
 	http.HandleFunc("/", handleAttemptedMoLink)
 }
@@ -29,7 +28,7 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 		ServeHomePage(w)
 		return
 	}
-	user, err := auth.GetAuthenticatedUser(r)
+	user, err := getUserInCookies(r)
 	if err != nil {
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Pragma", "no-cache")
@@ -57,7 +56,7 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 }
 
 func addLinkEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetAuthenticatedUser(r)
+	user, err := getUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return

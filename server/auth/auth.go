@@ -2,46 +2,14 @@ package auth
 
 import (
 	"encoding/json"
-	"errors"
 	"mo_links/common"
 	"mo_links/db"
 	"mo_links/jaxauth"
-	"net/http"
 	"os"
 	"strconv"
 )
 
 var Auth *jaxauth.JaxAuth[common.User]
-
-func GetAuthenticatedUser(r *http.Request) (common.TrimmedUser, error) {
-	// Log all cookies
-	var authCookie string
-	for _, cookie := range r.Cookies() {
-		if cookie.Name == Auth.CookieName {
-			authCookie = cookie.Value
-		}
-	}
-	if authCookie == "" {
-		return common.TrimmedUser{}, errors.New("no auth cookie found")
-	}
-	// Get raw cookie header
-	rawCookieHeader := r.Header.Get("Cookie")
-	if rawCookieHeader == "" {
-		return common.TrimmedUser{}, errors.New("no raw cookie header found")
-	}
-
-	decryptedCookie, err := Auth.AttemptCookieDecryption(rawCookieHeader)
-	if err != nil {
-		return common.TrimmedUser{}, err
-	}
-	// parse cookie as json
-	var user common.TrimmedUser
-	err = json.Unmarshal([]byte(decryptedCookie), &user)
-	if err != nil {
-		return common.TrimmedUser{}, err
-	}
-	return user, nil
-}
 
 func InitAuth() {
 	Auth = jaxauth.NewJaxAuth[common.User]()

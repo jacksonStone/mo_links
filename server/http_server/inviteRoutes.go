@@ -1,8 +1,7 @@
-package routes
+package http_server
 
 import (
 	"encoding/json"
-	"mo_links/auth"
 	"mo_links/models"
 	"net/http"
 	"regexp"
@@ -16,7 +15,7 @@ type SendInviteRequest struct {
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
-func InitializeInvitesRoute() {
+func initializeInvitesRoute() {
 	http.HandleFunc("/____reserved/api/send_invite", sendInviteEndpoint)
 	http.HandleFunc("/____reserved/api/accept_invite", acceptInviteEndpoint)
 }
@@ -26,7 +25,7 @@ func validEmail(email string) bool {
 }
 
 func sendInviteEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetAuthenticatedUser(r)
+	user, err := getUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return

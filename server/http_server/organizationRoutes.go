@@ -1,13 +1,10 @@
-package routes
+package http_server
 
 import (
 	"encoding/json"
-	"mo_links/auth"
-	"mo_links/common"
 	"mo_links/db"
 	"mo_links/models"
 	"net/http"
-	"strconv"
 )
 
 type CreateOrganizationRequest struct {
@@ -25,7 +22,7 @@ type UpdateActiveOrganizationRequest struct {
 	OrganizationId int64 `json:"organizationId"`
 }
 
-func InitOrganizationRoutes() {
+func initializeOrganizationRoutes() {
 	http.HandleFunc("/____reserved/api/organizations", organizationsEndpoint)
 	http.HandleFunc("/____reserved/api/organization/make_active", makeActiveOrganizationEndpoint)
 	http.HandleFunc("/____reserved/api/organization/create", createOrganizationEndpoint)
@@ -33,17 +30,8 @@ func InitOrganizationRoutes() {
 	http.HandleFunc("/____reserved/api/organization/members", getOrganizationMembersEndpoint)
 }
 
-func refreshCookie(user common.User, w http.ResponseWriter) {
-	cookie, err := auth.Auth.CreateNewCookie(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Set-Cookie", cookie)
-}
-
 func organizationsEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetAuthenticatedUser(r)
+	user, err := getUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -60,7 +48,7 @@ func organizationsEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func createOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetAuthenticatedUser(r)
+	user, err := getUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -83,7 +71,7 @@ func createOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetAuthenticatedUser(r)
+	user, err := getUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -128,7 +116,7 @@ func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetAuthenticatedUser(r)
+	user, err := getUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -157,7 +145,7 @@ func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			// Refresh login cookie
-			fullUser, err := auth.Auth.GetUser(strconv.Itoa(int(user.Id)))
+			fullUser, err := models.GetUserById(user.Id)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -171,7 +159,7 @@ func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func getOrganizationMembersEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetAuthenticatedUser(r)
+	user, err := getUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return

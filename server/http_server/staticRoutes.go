@@ -1,4 +1,4 @@
-package routes
+package http_server
 
 import (
 	"embed"
@@ -9,7 +9,7 @@ import (
 //go:embed static
 var static embed.FS
 
-func InitStaticRoutes() {
+func initializeStaticRoutes() {
 
 	http.HandleFunc("/____reserved/create_organization", serveCreateOrganizationPage)
 	http.HandleFunc("/____reserved/edit_organization", serveEditOrganizationPage)

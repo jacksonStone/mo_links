@@ -1,18 +1,17 @@
-package routes
+package http_server
 
 import (
 	"encoding/json"
-	"mo_links/auth"
 	"mo_links/models"
 	"net/http"
 )
 
-func InitUserDetailRoutes() {
+func initializeUserDetailRoutes() {
 	http.HandleFunc("/____reserved/api/me", meEndpoint)
 }
 
 func meEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetAuthenticatedUser(r)
+	user, err := getUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
