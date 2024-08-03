@@ -5,9 +5,13 @@ package main
 import (
 	"embed"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
+	"mo_links/auth"
+	"mo_links/common"
+	"mo_links/db"
+	"mo_links/models"
+	"mo_links/routes"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -43,9 +47,9 @@ type UpdateActiveOrganizationRequest struct {
 }
 
 func main() {
-	initializeDB()
-	InitAuth()
-
+	db.InitializeDB()
+	auth.InitAuth()
+	routes.InitializeInvitesRoute()
 	http.HandleFunc("/____reserved/api/login", loginEndpoint)
 	http.HandleFunc("/____reserved/api/signup", signupEndpoint)
 	http.HandleFunc("/____reserved/api/test_cookie", testCookieEndpoint)
@@ -124,12 +128,12 @@ func loginPageEndpoint(w http.ResponseWriter, r *http.Request) {
 	returnStaticFile(w, "static/login.html")
 }
 func meEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getAuthenticatedUser(r)
+	user, err := auth.GetAuthenticatedUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	userDetails, err := getUserDetails(user)
+	userDetails, err := models.GetUserDetails(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -143,7 +147,7 @@ func decodeLink(r *http.Request, organizationId int64) ([]string, error) {
 	if path == "" {
 		return []string{}, nil
 	}
-	links, err := getMatchingLinks(organizationId, path)
+	links, err := models.GetMatchingLinks(organizationId, path)
 	fmt.Println(links)
 	if err != nil {
 		return []string{}, err
@@ -151,38 +155,8 @@ func decodeLink(r *http.Request, organizationId int64) ([]string, error) {
 	return links, nil
 }
 
-func getAuthenticatedUser(r *http.Request) (TrimmedUser, error) {
-	// Log all cookies
-	var authCookie string
-	for _, cookie := range r.Cookies() {
-		if cookie.Name == Auth.CookieName {
-			authCookie = cookie.Value
-		}
-	}
-	if authCookie == "" {
-		return TrimmedUser{}, errors.New("no auth cookie found")
-	}
-	// Get raw cookie header
-	rawCookieHeader := r.Header.Get("Cookie")
-	if rawCookieHeader == "" {
-		return TrimmedUser{}, errors.New("no raw cookie header found")
-	}
-
-	decryptedCookie, err := Auth.AttemptCookieDecryption(rawCookieHeader)
-	if err != nil {
-		return TrimmedUser{}, err
-	}
-	// parse cookie as json
-	var user TrimmedUser
-	err = json.Unmarshal([]byte(decryptedCookie), &user)
-	if err != nil {
-		return TrimmedUser{}, err
-	}
-	return user, nil
-}
-
 func addLinkEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getAuthenticatedUser(r)
+	user, err := auth.GetAuthenticatedUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -201,7 +175,7 @@ func addLinkEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = addLink(request.Url, request.Name, user.Id, user.ActiveOrganizationId)
+	err = models.AddLink(request.Url, request.Name, user.Id, user.ActiveOrganizationId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusExpectationFailed)
 		return
@@ -209,7 +183,7 @@ func addLinkEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func testCookieEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getAuthenticatedUser(r)
+	user, err := auth.GetAuthenticatedUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -227,7 +201,7 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 		serveHomePage(w)
 		return
 	}
-	user, err := getAuthenticatedUser(r)
+	user, err := auth.GetAuthenticatedUser(r)
 	if err != nil {
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Pragma", "no-cache")
@@ -262,17 +236,17 @@ func signupEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	userId, _ := dbGetUserByEmail(request.Email)
+	userId, _ := db.DbGetUserByEmail(request.Email)
 	if userId != 0 {
 		http.Error(w, "User with that email already exists", http.StatusBadRequest)
 		return
 	}
-	salt := Auth.GenerateSalt()
-	verificationToken := Auth.GenerateSalt() // Get a different random string for the verification token so that the "actual" salt will not be sent over email
-	hashedPassword := Auth.GetHashedPasswordFromRawTextPassword(request.Password, salt)
+	salt := auth.Auth.GenerateSalt()
+	verificationToken := auth.Auth.GenerateSalt() // Get a different random string for the verification token so that the "actual" salt will not be sent over email
+	hashedPassword := auth.Auth.GetHashedPasswordFromRawTextPassword(request.Password, salt)
 	verificationExpiration := int64(time.Now().Add(7 * 24 * time.Hour).Unix())
 	// Create the user
-	err = dbSignupUser(request.Email, hashedPassword, salt, verificationToken, verificationExpiration)
+	err = db.DbSignupUser(request.Email, hashedPassword, salt, verificationToken, verificationExpiration)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -281,10 +255,6 @@ func signupEndpoint(w http.ResponseWriter, r *http.Request) {
 	attemptLogin(w, request.Email, request.Password)
 }
 func loginEndpoint(w http.ResponseWriter, r *http.Request) {
-	// Grab email and password from request
-	// Check if email and password are correct
-	// If correct, return cookie
-	// If incorrect, return error
 	var request LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
@@ -295,12 +265,12 @@ func loginEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func attemptLogin(w http.ResponseWriter, userEmail string, plainTextPassword string) {
-	userId, err := dbGetUserByEmail(userEmail)
+	userId, err := db.DbGetUserByEmail(userEmail)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	attemptedCookie, err := Auth.AttemptLoginAndGetCookie(strconv.Itoa(int(userId)), plainTextPassword)
+	attemptedCookie, err := auth.Auth.AttemptLoginAndGetCookie(strconv.Itoa(int(userId)), plainTextPassword)
 	if err != nil {
 		http.Error(w, "Invalid Login", http.StatusBadRequest)
 		return
@@ -310,8 +280,8 @@ func attemptLogin(w http.ResponseWriter, userEmail string, plainTextPassword str
 	w.Write([]byte("OK"))
 }
 
-func refreshCookie(user User, w http.ResponseWriter) {
-	cookie, err := Auth.CreateNewCookie(user)
+func refreshCookie(user common.User, w http.ResponseWriter) {
+	cookie, err := auth.Auth.CreateNewCookie(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -320,13 +290,13 @@ func refreshCookie(user User, w http.ResponseWriter) {
 }
 
 func organizationsEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getAuthenticatedUser(r)
+	user, err := auth.GetAuthenticatedUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	organizations, err := getMatchingOrganizations(user.Id)
+	organizations, err := models.GetMatchingOrganizations(user.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -337,7 +307,7 @@ func organizationsEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func createOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getAuthenticatedUser(r)
+	user, err := auth.GetAuthenticatedUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -350,7 +320,7 @@ func createOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = createOrganization(request.Name, user.Id)
+	err = models.CreateOrganization(request.Name, user.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -360,7 +330,7 @@ func createOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getAuthenticatedUser(r)
+	user, err := auth.GetAuthenticatedUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -373,7 +343,7 @@ func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role, err := getUserRoleInOrganization(user.Id, request.OrganizationId)
+	role, err := models.GetUserRoleInOrganization(user.Id, request.OrganizationId)
 
 	if err != nil {
 		http.Error(w, "Error checking user permissions", http.StatusInternalServerError)
@@ -384,18 +354,18 @@ func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, _ := getOrganizationById(request.OrganizationId)
+	org, _ := models.GetOrganizationById(request.OrganizationId)
 	if org.IsPersonal {
 		http.Error(w, "Cannot assign members to personal organization", http.StatusBadRequest)
 		return
 	}
 
-	if !roleCanAddRole(role, request.Role) {
+	if !models.RoleCanAddRole(role, request.Role) {
 		http.Error(w, "Unauthorized to assign "+request.Role+"s to this organization", http.StatusForbidden)
 		return
 	}
 
-	err = assignMemberToOrganization(request.UserId, request.Role, request.OrganizationId)
+	err = models.AssignMemberToOrganization(request.UserId, request.Role, request.OrganizationId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -405,7 +375,7 @@ func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getAuthenticatedUser(r)
+	user, err := auth.GetAuthenticatedUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -420,7 +390,7 @@ func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "must provide target organization ID", http.StatusBadRequest)
 		return
 	}
-	organizations, err := getMatchingOrganizations(user.Id)
+	organizations, err := models.GetMatchingOrganizations(user.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -428,13 +398,13 @@ func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 	// If we are in that org, we can assign it as our active org
 	for _, org := range organizations {
 		if org.Id == request.OrganizationId {
-			err = dbSetUserActiveOrganization(user.Id, request.OrganizationId)
+			err = db.DbSetUserActiveOrganization(user.Id, request.OrganizationId)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			// Refresh login cookie
-			fullUser, err := Auth.GetUser(strconv.Itoa(int(user.Id)))
+			fullUser, err := auth.Auth.GetUser(strconv.Itoa(int(user.Id)))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -448,7 +418,7 @@ func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func getOrganizationMembersEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getAuthenticatedUser(r)
+	user, err := auth.GetAuthenticatedUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -461,7 +431,7 @@ func getOrganizationMembersEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role, err := getUserRoleInOrganization(user.Id, request.OrganizationId)
+	role, err := models.GetUserRoleInOrganization(user.Id, request.OrganizationId)
 
 	if err != nil {
 		http.Error(w, "Error checking user permissions", http.StatusInternalServerError)
@@ -472,12 +442,12 @@ func getOrganizationMembersEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !roleCanViewMembers(role) {
+	if !models.RoleCanViewMembers(role) {
 		http.Error(w, "User is not authorized to view members of this organization", http.StatusForbidden)
 		return
 	}
 
-	members, err := getOrganizationMembers(request.OrganizationId)
+	members, err := models.GetOrganizationMembers(request.OrganizationId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

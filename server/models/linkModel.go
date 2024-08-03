@@ -1,14 +1,13 @@
-package main
+package models
 
 import (
 	"errors"
+	"mo_links/db"
 	"strings"
 	"unicode"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
-func getMatchingLinks(organizationId int64, name string) ([]string, error) {
+func GetMatchingLinks(organizationId int64, name string) ([]string, error) {
 	if organizationId == 0 {
 		return []string{}, errors.New("organizationId must be defined")
 	}
@@ -18,7 +17,7 @@ func getMatchingLinks(organizationId int64, name string) ([]string, error) {
 	if len(name) > 255 {
 		return []string{}, errors.New("name must be 255 characters or less")
 	}
-	links, err := dbGetMatchingLinks(organizationId, name)
+	links, err := db.DbGetMatchingLinks(organizationId, name)
 	if err != nil {
 		return []string{}, err
 	}
@@ -30,11 +29,11 @@ func getMatchingLinks(organizationId int64, name string) ([]string, error) {
 	}
 
 	match := links[0]
-	go dbIncrementViewCountOfLink(organizationId, name)
+	go db.DbIncrementViewCountOfLink(organizationId, name)
 	return []string{match}, nil
 }
 
-func addLink(url string, name string, userId int64, activeOrganizationId int64) error {
+func AddLink(url string, name string, userId int64, activeOrganizationId int64) error {
 	err := validName(name)
 	if err != nil {
 		return err
@@ -46,14 +45,14 @@ func addLink(url string, name string, userId int64, activeOrganizationId int64) 
 	if !strings.Contains(url, "//") {
 		url = "https://" + url
 	}
-	links, err := dbGetMatchingLinks(activeOrganizationId, name)
+	links, err := db.DbGetMatchingLinks(activeOrganizationId, name)
 	if err != nil {
 		return err
 	}
 	if len(links) > 0 {
 		return errors.New("link already exists for that organization")
 	}
-	return dbAddLink(url, name, userId, activeOrganizationId)
+	return db.DbAddLink(url, name, userId, activeOrganizationId)
 }
 
 func validUrl(url string) error {

@@ -1,4 +1,4 @@
-package main
+package jaxauth
 
 import (
 	"crypto/aes"
