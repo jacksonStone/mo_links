@@ -104,6 +104,7 @@ func txCreateOrganizationAndOwnerMembership(tx *sql.Tx, name string, userId int6
 	}
 	return nil
 }
+
 func DbCreateOrganizationAndOwnerMembership(name string, userId int64) error {
 	tx, err := db.Begin()
 	if err != nil {

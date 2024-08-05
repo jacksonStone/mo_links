@@ -66,6 +66,19 @@ type MembershipInvite struct {
 	Accepted        bool      `json:"accepted"`
 }
 
+type Invite struct {
+	Id              int64
+	OrganizationId  int64
+	InviteeEmail    string
+	Token           string
+	EmailMessage    string
+	SentAt          time.Time
+	CreatedByUserId int64
+	AcceptedAt      time.Time
+	InviteeId       int64
+	Accepted        bool
+}
+
 const (
 	RoleAdmin  = "Admin"
 	RoleOwner  = "Owner"

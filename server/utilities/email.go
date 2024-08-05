@@ -17,7 +17,7 @@ func getRootUrl() string {
 	return "http://localhost:3003"
 }
 
-func SendInviteEmail(inviteeEmail, inviterEmail, organizationName, verificationToken string) error {
+func SendInviteEmail(inviteeEmail, inviterEmail, organizationName, verificationToken, emailMessage string) error {
 	encodedEmail := url.QueryEscape(inviteeEmail)
 
 	return sendEmail(
@@ -27,17 +27,20 @@ func SendInviteEmail(inviteeEmail, inviterEmail, organizationName, verificationT
 		"admin@molinks.me",
 		fmt.Sprintf(`
 You've been invited by %s to join the MoLinks organization: %s
+Their Note: %s
 Click the link below to accept the invite:
 %s/___reserved/api/accept-invite?token=%s&email=%s`,
-			inviterEmail, organizationName, getRootUrl(), verificationToken, encodedEmail),
+			inviterEmail, organizationName, emailMessage, getRootUrl(), verificationToken, encodedEmail),
 
 		fmt.Sprintf(`
 <strong>You've been invited by %s to join the MoLinks organization: %s</strong>
 <br>
+Their Note: %s
+<br>
 Click the link below to accept the invite:
 <br>
 <a href="%s/___reserved/api/accept-invite?token=%s&email=%s">Accept Invite</a>`,
-			inviterEmail, organizationName, getRootUrl(), verificationToken, encodedEmail))
+			inviterEmail, organizationName, emailMessage, getRootUrl(), verificationToken, encodedEmail))
 }
 
 func SendSignupValidationEmail(userEmail, verificationToken string) error {

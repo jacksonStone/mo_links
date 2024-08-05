@@ -17,7 +17,12 @@ func initializeLinkRoutes() {
 	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
 	http.HandleFunc("/", handleAttemptedMoLink)
 }
-
+func redirectToLoginWithNext(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+	http.Redirect(w, r, "/____reserved/login_page?next="+url.QueryEscape(r.URL.Path+"?"+r.URL.RawQuery), http.StatusFound)
+}
 func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 	// For when running locally without the reverse proxy
 	if strings.HasSuffix(r.URL.Path, "/____reserved/_ping") {
@@ -26,10 +31,7 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := getUserInCookies(r)
 	if err != nil {
-		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-		w.Header().Set("Pragma", "no-cache")
-		w.Header().Set("Expires", "0")
-		http.Redirect(w, r, "/____reserved/login_page?next="+url.QueryEscape(r.URL.Path), http.StatusFound)
+		redirectToLoginWithNext(w, r)
 		return
 	}
 	if r.URL.Path == "/" {
