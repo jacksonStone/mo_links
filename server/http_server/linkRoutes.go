@@ -24,16 +24,22 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 		return
 	}
-	if r.URL.Path == "/" {
-		ServeHomePage(w)
-		return
-	}
 	user, err := getUserInCookies(r)
 	if err != nil {
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 		http.Redirect(w, r, "/____reserved/login_page?next="+url.QueryEscape(r.URL.Path), http.StatusFound)
+		return
+	}
+	if r.URL.Path == "/" {
+		ServeHomePage(w)
+		return
+	}
+	_, err = getVerifiedUserInCookies(r)
+	if err != nil {
+		// If user has not validated email, redirect to the page telling them this.
+		ServeHomePage(w)
 		return
 	}
 	links, err := decodeLink(r, user.ActiveOrganizationId)
@@ -56,7 +62,7 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 }
 
 func addLinkEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserInCookies(r)
+	user, err := getVerifiedUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return

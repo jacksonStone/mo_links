@@ -240,3 +240,29 @@ th {
 .membership-container select {
     width: 100%;
 }
+.loading, .unverified {
+    text-align: center;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 400px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.loading p, .unverified p {
+    font-size: 18px;
+    color: #333;
+    margin: 0;
+}
+
+.loading::after {
+    content: "...";
+    animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: "."; }
+    40% { content: ".."; }
+    60%, 100% { content: "..."; }
+}

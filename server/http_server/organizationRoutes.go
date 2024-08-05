@@ -31,7 +31,7 @@ func initializeOrganizationRoutes() {
 }
 
 func organizationsEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserInCookies(r)
+	user, err := getVerifiedUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -48,7 +48,7 @@ func organizationsEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func createOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserInCookies(r)
+	user, err := getVerifiedUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -71,7 +71,7 @@ func createOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserInCookies(r)
+	user, err := getVerifiedUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -116,7 +116,7 @@ func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserInCookies(r)
+	user, err := getVerifiedUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -159,7 +159,7 @@ func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func getOrganizationMembersEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserInCookies(r)
+	user, err := getVerifiedUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return

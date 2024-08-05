@@ -14,6 +14,7 @@ func StartServer() {
 }
 
 func initializeRoutes() {
+	initializeEmailTokenRoutes()
 	initializeInvitesRoute()
 	initializeStaticRoutes()
 	initializeAuthRoutes()

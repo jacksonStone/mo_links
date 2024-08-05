@@ -9,9 +9,9 @@
     <script src="/____reserved/static/ping.js"></script>
     <script>
         function validateUrl(url) {
-            // can't be longer than 2048 characters
-            if (url.length > 2048) {
-                surfaceError("url must be 2048 characters or less");
+            // can't be longer than 1024 characters
+            if (url.length > 1024) {
+                surfaceError("url must be 1024 characters or less");
                 return false
             }
             return true;
@@ -92,49 +92,7 @@
             });
         });
     </script>
-</head>
-
-<body>
-    <div class="container">
-        <div class="form-container">
-            <div class="input-group" id="name-group">
-                <div class="error-text" id="error-text"></div>
-                <div class="input-wrapper">
-                    <span><b>mo /</b></span>
-                    <input type="text" id="name" placeholder="mo">
-                </div>
-            </div>
-            <input type="url" id="url" placeholder="URL">
-            <button id="submit">Mo Link It</button>
-        </div>
-        <img src="/____reserved/static/logo.svg" alt="Mo Links Logo" style="float: right; width: 150px; margin-bottom: 10px;">
-
-    </div>
-    <div class="links-table">
-        <div class="membership-container">
-            <label for="membership-select">Organization:</label>
-            <select id="membership-select">
-            </select>
-            <a href="/____reserved/create_organization" class="new-org-link">Create New Organization</a>
-
-        </div>
-        <h2>Your Current Links</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>URL</th>
-                    <th>Organization</th>
-                    <th>Views</th>
-                </tr>
-            </thead>
-            <tbody id="links-list">
-                <!-- Links will be dynamically added here -->
-            </tbody>
-        </table>
-    </div>
-
-    <script>
+     <script>
         // Add this function to update the links table
         function updateLinksTable(details) {
             const links = details.MoLinks
@@ -185,10 +143,17 @@
             try {
                 const response = await fetch('/____reserved/api/me')
                 const details = await response.json()
-                updateLinksTable(details)
-                hydrateUserDetails(details)
+                if (details.VerifiedEmail) {
+                    updateLinksTable(details)
+                    hydrateUserDetails(details)
+                    document.getElementById('verified').style.display = 'block';
+                } else {
+                    document.getElementById('unverified').style.display = 'block';
+                }
             } catch (error) {
                 console.error('Error fetching links:', error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
             }
         }
 
@@ -223,6 +188,53 @@
             document.getElementById('membership-select').addEventListener('change', handleMembershipChange);
         });
     </script>
+</head>
+
+<body>
+    <div id="loading" class="loading"><p>Loading...</p></div>
+    <div id="unverified" class="unverified" style="display: none;">
+        <p>Check email for a verification link.</p>
+    </div>
+    <div id="verified" class="verified" style="display: none;">
+        <div class="container">
+            <div class="form-container">
+                <div class="input-group" id="name-group">
+                    <div class="error-text" id="error-text"></div>
+                    <div class="input-wrapper">
+                        <span><b>mo /</b></span>
+                        <input type="text" id="name" placeholder="mo">
+                    </div>
+                </div>
+                <input type="url" id="url" placeholder="URL">
+                <button id="submit">Mo Link It</button>
+            </div>
+            <img src="/____reserved/static/logo.svg" alt="Mo Links Logo" style="float: right; width: 150px; margin-bottom: 10px;">
+    
+        </div>
+        <div class="links-table">
+            <div class="membership-container">
+                <label for="membership-select">Organization:</label>
+                <select id="membership-select">
+                </select>
+                <a href="/____reserved/create_organization" class="new-org-link">Create New Organization</a>
+    
+            </div>
+            <h2>Your Current Links</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>URL</th>
+                        <th>Organization</th>
+                        <th>Views</th>
+                    </tr>
+                </thead>
+                <tbody id="links-list">
+                    <!-- Links will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 
 </html>

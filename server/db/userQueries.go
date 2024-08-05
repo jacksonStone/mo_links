@@ -11,16 +11,29 @@ func initializeUserQueries() {
 	setUserActiveOrganizationStmt()
 	signupUserByEmailStmt()
 	userByEmailStmt()
+	setEmailToVerifiedStmt()
+}
+
+func setEmailToVerifiedStmt() *sql.Stmt {
+	return getQuery(`
+	UPDATE mo_links_users SET verified_email = true WHERE id = ?`)
+}
+func DbSetEmailToVerified(userId int64) error {
+	_, err := setEmailToVerifiedStmt().Exec(userId)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func getUserStmt() *sql.Stmt {
 	return getQuery(`
-	SELECT id, email, password_hash, password_salt, active_organization_id FROM mo_links_users WHERE id = ? LIMIT 1`)
+	SELECT id, email, password_hash, password_salt, active_organization_id, verification_token, verification_token_expires_at, verified_email FROM mo_links_users WHERE id = ? LIMIT 1`)
 }
 func DbGetUser(userId int64) (common.User, error) {
 	row := getUserStmt().QueryRow(userId)
 	var user common.User
-	err := row.Scan(&user.Id, &user.Email, &user.HashedPassword, &user.Salt, &user.ActiveOrganizationId)
+	err := row.Scan(&user.Id, &user.Email, &user.HashedPassword, &user.Salt, &user.ActiveOrganizationId, &user.VerificationToken, &user.VerificationTokenExpiresAt, &user.VerifiedEmail)
 	if err != nil {
 		return common.User{}, err
 	}

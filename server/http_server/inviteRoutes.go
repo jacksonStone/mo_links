@@ -25,7 +25,7 @@ func validEmail(email string) bool {
 }
 
 func sendInviteEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserInCookies(r)
+	user, err := getVerifiedUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return

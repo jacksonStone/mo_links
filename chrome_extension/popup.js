@@ -1,9 +1,9 @@
 const root = "https://www.molinks.me"
 
 function validateUrl(url) {
-    // can't be longer than 2048 characters
-    if (url.length > 2048) {
-        surfaceError("url must be 2048 characters or less");
+    // can't be longer than 1024 characters
+    if (url.length > 1024) {
+        surfaceError("url must be 1024 characters or less");
         return false
     }
     return true;

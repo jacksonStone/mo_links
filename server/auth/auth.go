@@ -60,6 +60,7 @@ func InitAuth() {
 			Id:                   user.Id,
 			Email:                user.Email,
 			ActiveOrganizationId: user.ActiveOrganizationId,
+			VerifiedEmail:        user.VerifiedEmail,
 		})
 		return string(cookieContents)
 	}

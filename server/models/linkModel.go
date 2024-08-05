@@ -59,9 +59,9 @@ func validUrl(url string) error {
 	if url == "" {
 		return errors.New("url must not be empty")
 	}
-	// can't be longer than 2048 charecters
-	if len(url) > 2048 {
-		return errors.New("url must be 2048 characters or less")
+	// can't be longer than 1024 charecters
+	if len(url) > 1024 {
+		return errors.New("url must be 1024 characters or less")
 	}
 	return nil
 }

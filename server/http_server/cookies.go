@@ -19,6 +19,16 @@ func getUserInCookies(r *http.Request) (common.TrimmedUser, error) {
 	}
 	return user, nil
 }
+func getVerifiedUserInCookies(r *http.Request) (common.TrimmedUser, error) {
+	user, err := getUserInCookies(r)
+	if err != nil {
+		return common.TrimmedUser{}, err
+	}
+	if !user.VerifiedEmail {
+		return common.TrimmedUser{}, errors.New("user not verified")
+	}
+	return user, nil
+}
 func attemptLogin(w http.ResponseWriter, userId int64, plainTextPassword string) {
 	attemptedCookie, err := auth.AttemptLoginAndGetCookie(userId, plainTextPassword)
 	if err != nil {

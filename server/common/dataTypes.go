@@ -3,17 +3,21 @@ package common
 import "time"
 
 type User struct {
-	Salt                 string
-	HashedPassword       string
-	Id                   int64
-	Email                string
-	ActiveOrganizationId int64
+	Salt                       string
+	HashedPassword             string
+	Id                         int64
+	Email                      string
+	ActiveOrganizationId       int64
+	VerifiedEmail              bool
+	VerificationToken          string
+	VerificationTokenExpiresAt time.Time
 }
 
 type TrimmedUser struct {
 	Id                   int64  `json:"id"`
 	Email                string `json:"email"`
 	ActiveOrganizationId int64  `json:"activeOrganizationId"`
+	VerifiedEmail        bool   `json:"verifiedEmail"`
 }
 
 type Organization struct {
@@ -35,6 +39,7 @@ type UserDetails struct {
 	Id                   int64
 	Email                string
 	ActiveOrganizationId int64
+	VerifiedEmail        bool
 	Memberships          []OrganizationMember
 	MoLinks              []MoLink
 }

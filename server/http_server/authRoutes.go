@@ -2,7 +2,6 @@ package http_server
 
 import (
 	"encoding/json"
-	"fmt"
 	"mo_links/db"
 	"mo_links/models"
 	"net/http"
@@ -25,7 +24,9 @@ func testCookieEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	w.Write([]byte(fmt.Sprintf("Hello, %s", user.Email)))
+	// Send user as json
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
 }
 
 func signupEndpoint(w http.ResponseWriter, r *http.Request) {
