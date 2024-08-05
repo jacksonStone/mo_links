@@ -29,7 +29,7 @@ func SendInviteEmail(inviteeEmail, inviterEmail, organizationName, verificationT
 You've been invited by %s to join the MoLinks organization: %s
 Their Note: %s
 Click the link below to accept the invite:
-%s/___reserved/api/accept-invite?token=%s&email=%s`,
+%s/____reserved/api/accept_invite?token=%s&email=%s`,
 			inviterEmail, organizationName, emailMessage, getRootUrl(), verificationToken, encodedEmail),
 
 		fmt.Sprintf(`
@@ -39,7 +39,7 @@ Their Note: %s
 <br>
 Click the link below to accept the invite:
 <br>
-<a href="%s/___reserved/api/accept-invite?token=%s&email=%s">Accept Invite</a>`,
+<a href="%s/____reserved/api/accept_invite?token=%s&email=%s">Accept Invite</a>`,
 			inviterEmail, organizationName, emailMessage, getRootUrl(), verificationToken, encodedEmail))
 }
 
@@ -48,7 +48,7 @@ func SendSignupValidationEmail(userEmail, verificationToken string) error {
 		fmt.Sprintf(`
 Welcome to MoLinks!
 Copy and paste the following link into your browser to verify your email:
-%s/___reserved/api/verify-email?token=%s`,
+%s/____reserved/api/verify_email?token=%s`,
 			getRootUrl(), verificationToken),
 
 		fmt.Sprintf(`
@@ -56,7 +56,7 @@ Copy and paste the following link into your browser to verify your email:
 <br>
 Click the link below to verify your email:
 <br>
-<a href="%s/___reserved/api/verify-email?token=%s">Verify Email</a>`,
+<a href="%s/____reserved/api/verify_email?token=%s">Verify Email</a>`,
 			getRootUrl(), verificationToken))
 }
 

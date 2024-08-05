@@ -63,6 +63,17 @@
         }
     </style>
     <script>
+        const next = decodeURIComponent(window.location.search.split("next=")[1] || "");
+        let defaultEmail = "";
+        if(next) {
+            defaultEmail = decodeURIComponent(next.split("email=")[1] || "");
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            if(defaultEmail) {
+                alert("Please login or signup to continue");
+                document.getElementById("email").value = defaultEmail;
+            }
+        });
         function login(e) {
             e.preventDefault();
             const email = document.getElementById("email").value
@@ -74,8 +85,8 @@
                 .then((res) => {
                     if (res.status === 200) {
                         console.log("Login successful")
-                        if (window.location.search.includes("next")) {
-                            window.location.href = decodeURIComponent(window.location.search.split("next=")[1]);
+                        if (next) {
+                            window.location.href = next;
                         } else {
                             window.location.href = "/";
                         }
@@ -95,8 +106,8 @@
                 .then((res) => {
                     if (res.status === 200) {
                         console.log("Signup successful")
-                        if (window.location.search.includes("next")) {
-                            window.location.href = decodeURIComponent(window.location.search.split("next=")[1]);
+                        if (next) {
+                            window.location.href = next;
                         } else {
                             window.location.href = "/";
                         }
