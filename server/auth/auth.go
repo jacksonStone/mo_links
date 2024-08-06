@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"mo_links/auth/jaxauth"
 	"mo_links/common"
@@ -32,6 +34,13 @@ func AttemptCookieDecryption(rawCookieHeader string) (common.TrimmedUser, error)
 }
 func GenerateSalt() string {
 	return jaxAuthInstance.GenerateSalt()
+}
+func GenerateUrlSafeToken() string {
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		panic(err)
+	}
+	return base64.RawURLEncoding.EncodeToString(salt)
 }
 func GetHashedPasswordFromRawTextPassword(plainTextPassword string, salt string) string {
 	return jaxAuthInstance.GetHashedPasswordFromRawTextPassword(plainTextPassword, salt)

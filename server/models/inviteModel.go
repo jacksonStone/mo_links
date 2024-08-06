@@ -30,7 +30,7 @@ func CreateInvite(organizationId int64, inviteeEmail string, emailMessage string
 		return errors.New("organization has reached the maximum number of unaccepted invites")
 	}
 
-	token := auth.GenerateSalt()
+	token := auth.GenerateUrlSafeToken()
 
 	organization, err := db.DbGetOrganizationById(organizationId)
 	if err != nil {

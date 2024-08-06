@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"mo_links/models"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -34,14 +33,8 @@ func signupEmailVerificationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	encodedToken, err := url.QueryUnescape(fullUser.VerificationToken)
-	if err != nil {
-		fmt.Println("Error unescaping verification token", err)
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	if encodedToken != token {
-		fmt.Println("Verification token mismatch: ", encodedToken, token)
+	if fullUser.VerificationToken != token {
+		fmt.Println("Verification token mismatch: ", fullUser.VerificationToken, token)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

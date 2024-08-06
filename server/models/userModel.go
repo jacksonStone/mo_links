@@ -36,7 +36,7 @@ func SignupUser(email string, password string) error {
 		return errors.New("user with that email already exists")
 	}
 	salt := auth.GenerateSalt()
-	verificationToken := auth.GenerateSalt() // Get a different random string for the verification token so that the "actual" salt will not be sent over email
+	verificationToken := auth.GenerateUrlSafeToken() // This value should be URL safe because it will be passed as a URL parameter
 	hashedPassword := auth.GetHashedPasswordFromRawTextPassword(password, salt)
 	verificationExpiration := int64(time.Now().Add(7 * 24 * time.Hour).Unix())
 	// Create the user

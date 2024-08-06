@@ -91,6 +91,7 @@ func acceptInviteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// DO SOMETHING HERE WITH URL ENCODINGS
 	err = models.AcceptInvite(token, user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
