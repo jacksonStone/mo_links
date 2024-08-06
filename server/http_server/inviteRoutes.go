@@ -80,6 +80,9 @@ func sendInviteEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 func acceptInviteEndpoint(w http.ResponseWriter, r *http.Request) {
 	user, err := getUserInCookies(r)
+	// When a user gets redirected here from an email, they will have no cookie in all flows,
+	// so we will require a signon whether they have an account or not.
+	// The nice part about this is it will force people to signup first which is nice.
 	if err != nil {
 		redirectToLoginWithNext(w, r)
 		return
@@ -91,13 +94,13 @@ func acceptInviteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// DO SOMETHING HERE WITH URL ENCODINGS
 	err = models.AcceptInvite(token, user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if !user.VerifiedEmail {
+		// By accepting the invite the user has also validated their email if they have not already done so...
 		user.VerifiedEmail = true
 		models.SetEmailToVerified(user.Id)
 	}

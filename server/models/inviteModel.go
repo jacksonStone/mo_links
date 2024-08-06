@@ -66,3 +66,6 @@ func AcceptInvite(token string, user common.TrimmedUser) error {
 func GetOrganizationInvites(organizationId int64) ([]common.Invite, error) {
 	return db.DbGetOrganizationInvites(organizationId)
 }
+func DbGetInviteByTokenAndUser(token string, userEmail string) (common.Invite, error) {
+	return db.DbGetInviteByTokenAndUser(token, userEmail)
+}

@@ -31,6 +31,7 @@ func InitializeDB() {
 	initializeUserQueries()
 	initializeOrganizationQueries()
 	initializeLinkQueries()
+	initializeInviteQueries()
 	fmt.Println("All DB stmts prepared")
 
 }

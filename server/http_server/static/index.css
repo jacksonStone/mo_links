@@ -266,3 +266,24 @@ th {
     40% { content: ".."; }
     60%, 100% { content: "..."; }
 }
+
+.edit-org-link {
+    margin-left: 10px;
+    font-size: 14px;
+    color: #4a5568;
+    text-decoration: none;
+}
+
+.edit-org-link:hover {
+    text-decoration: underline;
+}
+
+.membership-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.membership-container select {
+    margin-right: 10px;
+}
