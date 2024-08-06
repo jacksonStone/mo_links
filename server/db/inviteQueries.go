@@ -26,24 +26,19 @@ func DbCreateInvite(organizationId int64, inviteeEmail string, token string, ema
 
 func getInviteByTokenAndUserStmt() *sql.Stmt {
 	return getQuery(`
-	SELECT id, organization_id, invitee_email, token, email_message, sent_at, created_by_user_id, invitee_id, accepted
+	SELECT id, organization_id, invitee_email, token, email_message, sent_at, created_by_user_id, accepted
 	FROM mo_links_membership_invites
 	WHERE token = ? AND invitee_email = ?`)
 }
 
 func DbGetInviteByTokenAndUser(token string, inviteeEmail string) (common.Invite, error) {
-	var invite common.Invite
-	var acceptedAt sql.NullTime
+	invite := common.Invite{}
 	err := getInviteByTokenAndUserStmt().QueryRow(token, inviteeEmail).Scan(
 		&invite.Id, &invite.OrganizationId, &invite.InviteeEmail, &invite.Token,
-		&invite.EmailMessage, &invite.SentAt, &invite.CreatedByUserId,
-		&acceptedAt, &invite.InviteeId, &invite.Accepted,
+		&invite.EmailMessage, &invite.SentAt, &invite.CreatedByUserId, &invite.Accepted,
 	)
 	if err != nil {
 		return common.Invite{}, err
-	}
-	if acceptedAt.Valid {
-		invite.AcceptedAt = acceptedAt.Time
 	}
 	return invite, nil
 }
@@ -61,10 +56,10 @@ func DbAcceptInvite(token string, inviteeEmail string, inviteeId int64) error {
 		return err
 	}
 	defer tx.Rollback() // This will be a no-op if the transaction is committed
-	var invite common.Invite
+	invite := common.Invite{}
 	err = tx.Stmt(getInviteByTokenAndUserStmt()).QueryRow(token, inviteeEmail).Scan(
 		&invite.Id, &invite.OrganizationId, &invite.InviteeEmail, &invite.Token,
-		&invite.EmailMessage, &invite.SentAt, &invite.CreatedByUserId, &invite.InviteeId, &invite.Accepted,
+		&invite.EmailMessage, &invite.SentAt, &invite.CreatedByUserId, &invite.Accepted,
 	)
 	if err != nil {
 		return err
@@ -88,7 +83,7 @@ func DbAcceptInvite(token string, inviteeEmail string, inviteeId int64) error {
 
 func getOrganizationInvitesStmt() *sql.Stmt {
 	return getQuery(`
-	SELECT id, invitee_email, email_message, sent_at, created_by_user_id, accepted_at, invitee_id, accepted
+	SELECT id, invitee_email, email_message, sent_at, created_by_user_id, accepted_at, accepted
 	FROM mo_links_membership_invites
 	WHERE organization_id = ?`)
 }
@@ -106,7 +101,7 @@ func DbGetOrganizationInvites(organizationId int64) ([]common.Invite, error) {
 		var acceptedAt sql.NullTime
 		err = rows.Scan(
 			&invite.Id, &invite.InviteeEmail, &invite.EmailMessage,
-			&invite.SentAt, &invite.CreatedByUserId, &acceptedAt, &invite.InviteeId, &invite.Accepted,
+			&invite.SentAt, &invite.CreatedByUserId, &acceptedAt, &invite.Accepted,
 		)
 		if err != nil {
 			return nil, err

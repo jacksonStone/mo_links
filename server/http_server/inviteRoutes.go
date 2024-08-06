@@ -2,6 +2,7 @@ package http_server
 
 import (
 	"encoding/json"
+	"mo_links/common"
 	"mo_links/models"
 	"net/http"
 	"regexp"
@@ -66,7 +67,7 @@ func sendInviteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if role != "admin" && role != "owner" {
+	if role != common.RoleOwner && role != common.RoleAdmin {
 		http.Error(w, "unauthorized to send invites for organization", http.StatusUnauthorized)
 		return
 	}
@@ -110,6 +111,7 @@ func acceptInviteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	refreshCookie(fullUser, w)
+	http.Redirect(w, r, "/", http.StatusFound)
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -131,7 +133,7 @@ func getOrganizationInvitesEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	if role != "admin" && role != "owner" {
+	if role != common.RoleAdmin && role != common.RoleOwner {
 		http.Error(w, "unauthorized to view invites for organization", http.StatusUnauthorized)
 		return
 	}
