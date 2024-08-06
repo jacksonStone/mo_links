@@ -36,11 +36,11 @@ func GenerateSalt() string {
 	return jaxAuthInstance.GenerateSalt()
 }
 func GenerateUrlSafeToken() string {
-	salt := make([]byte, 16)
-	if _, err := rand.Read(salt); err != nil {
+	randBytes := make([]byte, 32)
+	if _, err := rand.Read(randBytes); err != nil {
 		panic(err)
 	}
-	return base64.RawURLEncoding.EncodeToString(salt)
+	return base64.RawURLEncoding.EncodeToString(randBytes)
 }
 func GetHashedPasswordFromRawTextPassword(plainTextPassword string, salt string) string {
 	return jaxAuthInstance.GetHashedPasswordFromRawTextPassword(plainTextPassword, salt)

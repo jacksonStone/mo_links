@@ -44,20 +44,22 @@ Click the link below to accept the invite:
 }
 
 func SendSignupValidationEmail(userEmail, verificationToken string) error {
+	encodedEmail := url.QueryEscape(userEmail)
+
 	return sendEmail(userEmail, "Welcome to MoLinks!", "admin@molinks.me", "admin@molinks.me",
 		fmt.Sprintf(`
 Welcome to MoLinks!
 Copy and paste the following link into your browser to verify your email:
-%s/____reserved/api/verify_email?token=%s`,
-			getRootUrl(), verificationToken),
+%s/____reserved/api/verify_email?token=%s&email=%s`,
+			getRootUrl(), verificationToken, encodedEmail),
 
 		fmt.Sprintf(`
 <strong>Welcome to MoLinks!</strong>
 <br>
 Click the link below to verify your email:
 <br>
-<a href="%s/____reserved/api/verify_email?token=%s">Verify Email</a>`,
-			getRootUrl(), verificationToken))
+<a href="%s/____reserved/api/verify_email?token=%s&email=%s">Verify Email</a>`,
+			getRootUrl(), verificationToken, encodedEmail))
 }
 
 // Use sendgrid to send emails

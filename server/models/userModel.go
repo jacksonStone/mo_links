@@ -61,6 +61,13 @@ func GetUserById(id int64) (common.User, error) {
 	}
 	return user, nil
 }
+func GetUserByVerificationTokenAndEmail(token string, userEmail string) (common.User, error) {
+	user, err := db.DbGetUserByVerificationToken(token, userEmail)
+	if err != nil {
+		return common.User{}, err
+	}
+	return user, nil
+}
 func SetEmailToVerified(userId int64) error {
 	return db.DbSetEmailToVerified(userId)
 }

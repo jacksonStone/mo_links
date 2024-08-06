@@ -16,6 +16,7 @@ func initializeStaticRoutes() {
 	http.HandleFunc("/____reserved/privacy_policy", getPrivacyPolicyEndpoint)
 	http.HandleFunc("/____reserved/login_page", loginPageEndpoint)
 	http.HandleFunc("/____reserved/static/", serveStaticFiles)
+	http.HandleFunc("/____reserved/verified_email", serveVerifiedEmailPage)
 	http.HandleFunc("/favicon.ico", faviconEndpoint)
 
 }
@@ -43,6 +44,10 @@ func returnStaticFile(w http.ResponseWriter, path string) {
 		return
 	}
 	w.Write(bytes)
+}
+
+func serveVerifiedEmailPage(w http.ResponseWriter, r *http.Request) {
+	returnStaticFile(w, "static/verified_email.html")
 }
 
 func faviconEndpoint(w http.ResponseWriter, r *http.Request) {

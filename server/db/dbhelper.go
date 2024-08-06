@@ -43,6 +43,7 @@ func getQuery(query string) *sql.Stmt {
 			log.Fatal("error creating query:\n" + query + "\nError: " + err.Error())
 		}
 		queryMapping[query] = stmt
+		return stmt
 	}
 	return stmt
 }

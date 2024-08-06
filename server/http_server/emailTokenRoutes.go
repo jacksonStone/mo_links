@@ -13,16 +13,20 @@ func initializeEmailTokenRoutes() {
 
 func signupEmailVerificationHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	user, err := getUserInCookies(r)
-	if err != nil {
-		fmt.Println("Error getting user in cookies", err)
-		w.WriteHeader(http.StatusUnauthorized)
+	userEmail := r.URL.Query().Get("email")
+	if userEmail == "" {
+		fmt.Println("Email is required")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	fullUser, err := models.GetUserById(user.Id)
+	if token == "" {
+		fmt.Println("Token is required")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fullUser, err := models.GetUserByVerificationTokenAndEmail(token, userEmail)
 	if err != nil {
-		fmt.Println("Error getting user by id", err)
+		fmt.Println("No Valid user found with token and email", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -44,8 +48,8 @@ func signupEmailVerificationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fullUser.VerifiedEmail = true
-	models.SetEmailToVerified(user.Id)
+	models.SetEmailToVerified(fullUser.Id)
 	refreshCookie(fullUser, w)
 	// redirect to home page
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, "/____reserved/verified_email", http.StatusFound)
 }
