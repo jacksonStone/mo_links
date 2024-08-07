@@ -2,3 +2,4 @@ mo_links
 .DS_Store
 *.zip
 chrome_extension_local/
+node_modules/

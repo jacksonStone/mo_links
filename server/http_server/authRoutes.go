@@ -19,6 +19,15 @@ func initializeAuthRoutes() {
 }
 
 func testCookieEndpoint(w http.ResponseWriter, r *http.Request) {
+	// Allow CORS - the extension needs this
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	// Handle preflight request
+	if r.Method == http.MethodOptions {
+		return
+	}
+	// mo/goo
 	user, err := getUserInCookies(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)

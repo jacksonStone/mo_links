@@ -16,6 +16,8 @@ var jaxAuthInstance *jaxauth.JaxAuth[common.User]
 func GetCookieName() string {
 	return jaxAuthInstance.CookieName
 }
+
+// mo/somename is the link I am after
 func AttemptLoginAndGetCookie(userId int64, plainTextPassword string) (string, error) {
 	return jaxAuthInstance.AttemptLoginAndGetCookie(strconv.FormatInt(userId, 10), plainTextPassword)
 }

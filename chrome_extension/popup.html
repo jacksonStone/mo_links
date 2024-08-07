@@ -94,15 +94,18 @@
 </head>
 <body>
     <div class="container">
-        <div class="input-group" id="name-group">
-            <div class="error-text" id="error-text"></div>
-            <div class="input-wrapper">
-                <span><b>mo /</b></span>
-                <input type="text" id="name" placeholder="mo">
+        <div id="main-content">
+            <div id="organization-name"></div>
+            <div class="input-group" id="name-group">
+                <div class="error-text" id="error-text"></div>
+                <div class="input-wrapper">
+                    <span><b>mo /</b></span>
+                    <input type="text" id="name" placeholder="mo">
+                </div>
             </div>
+            <input type="url" id="url" placeholder="URL">
+            <button id="submit">Mo Link It</button>
         </div>
-        <input type="url" id="url" placeholder="URL">
-        <button id="submit">Mo Link It</button>
         <a href="#" class="subtle-link" id="see-links">Edit Mo Links</a>
     </div>
     <script src="popup.js"></script>

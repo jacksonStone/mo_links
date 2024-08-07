@@ -29,8 +29,18 @@ function surfaceError(message) {
     document.getElementById("error-text").textContent = message;
     nameGroup.classList.add('error');
 }
-
-document.addEventListener('DOMContentLoaded', function () {
+let emailVerified;
+function getLoginInfo() {
+    return fetch(root + '/____reserved/api/test_cookie').then(response => response.json()).then(data => {
+        if (data.verifiedEmail) {
+            emailVerified = true;
+        } else {
+            emailVerified = false;
+            throw new Error("Email not verified");
+        }
+    });
+}
+function initializeMainContent() {
     const nameInput = document.getElementById('name');
     const nameGroup = document.getElementById('name-group');
     const urlInput = document.getElementById('url');
@@ -94,9 +104,20 @@ document.addEventListener('DOMContentLoaded', function () {
             surfaceError("Both fields must not be empty");
         }
     });
-    // Add event listener for the "See Your Mo Links" link
+}
+document.addEventListener('DOMContentLoaded', function () {
+        // Add event listener for the "See Your Mo Links" link
     document.getElementById('see-links').addEventListener('click', function (e) {
         e.preventDefault(); // Prevent the default link behavior
         chrome.tabs.create({ url: root });
     });
+   getLoginInfo().then(initializeMainContent).catch(error => {
+    document.getElementById("main-content").style.display = "none";
+    if (emailVerified === undefined) {
+        document.getElementById("see-links").textContent = "Login/Signup Here";
+    } else if(emailVerified === false) {
+        document.getElementById("see-links").textContent = "Email not yet verified, check email for verification link";
+        document.getElementById("main-content").style.display = "none";
+    }
+   });
 });
