@@ -101,10 +101,11 @@
             linksList.innerHTML = '';
             links.forEach(link => {
                 const row = document.createElement('tr');
+                const membership = memberships.find(membership => membership.OrganizationId === link.OrganizationId)
                 row.innerHTML = `
                     <td><a href="#" class="copy-link" data-link="mo/${link.Name}"><span class="clipboard-icon" title="Click to copy">📋</span>mo/${link.Name}</a></td>
                     <td><a href="${link.Url}" target="_blank" class="truncate">${link.Url}</a></td>
-                    <td>${memberships.find(membership => membership.OrganizationId === link.OrganizationId).OrganizationName}</td>
+                    <td>${membership?.OrganizationName || "Unknown"}</td>
                     <td>${link.Views}</td>
                 `;
                 linksList.appendChild(row);
@@ -218,8 +219,6 @@
                 </select>
                 <a href="/____reserved/create_organization" class="new-org-link">Create New Organization</a>
                 <a href="/____reserved/edit_organization" class="edit-org-link">Edit Organizations</a>
-
-    
             </div>
             <h2>Your Current Links</h2>
             <table>
