@@ -97,7 +97,6 @@
         }
 
         function updateInvitesTable() {
-            function updateInvitesTable() {
             fetch('/____reserved/api/get_organization_invites', {
                 method: 'POST',
                 headers: {
@@ -109,6 +108,7 @@
             })
             .then(response => response.json())
             .then(invites => {
+                debugger;
                 const invitesList = document.getElementById('invites-list');
                 invitesList.innerHTML = '';
                 invites.forEach(invite => {
@@ -125,7 +125,7 @@
                 console.error('Error fetching invites:', error);
                 // Optionally, display an error message to the user
             });
-        }
+        
         }
 
         function updateMembersTable() {
@@ -218,6 +218,7 @@
         document.getElementById('organization-select').addEventListener('change', function() {
             currentOrganizationId = this.value;
             if (currentOrganizationId) {
+                debugger;
                 updateInvitesTable();
                 updateMembersTable();
             }
