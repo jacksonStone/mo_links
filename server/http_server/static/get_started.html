@@ -27,7 +27,7 @@
 </head>
 
 <body>
-    <div class="container" style="display: block;">
+    <div class="container" style="display: block; margin: 0 auto;">
         <h1>Getting Started</h1>
         <div class="step">
             <h3><span class="step-number">1.</span>Install the Chrome Extension</h3>
@@ -61,8 +61,6 @@
         try {
             const response = await fetch('/____reserved/api/me');
             const userData = await response.json();
-            console.log(userData);
-            debugger;
             const createOrgStep = document.getElementById('create-organization');
             const inviteOthersStep = document.getElementById('invite-others');
             const orgId = userData.ActiveOrganizationId;
