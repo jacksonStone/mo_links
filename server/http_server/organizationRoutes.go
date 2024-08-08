@@ -26,7 +26,6 @@ func initializeOrganizationRoutes() {
 	http.HandleFunc("/____reserved/api/organizations", organizationsEndpoint)
 	http.HandleFunc("/____reserved/api/organization/make_active", makeActiveOrganizationEndpoint)
 	http.HandleFunc("/____reserved/api/organization/create", createOrganizationEndpoint)
-	http.HandleFunc("/____reserved/api/organization/assign_member", assignMemberEndpoint)
 	http.HandleFunc("/____reserved/api/organization/members", getOrganizationMembersEndpoint)
 }
 
@@ -66,53 +65,15 @@ func createOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusCreated)
-}
-
-func assignMemberEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getVerifiedUserInCookies(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	var request AssignMemberRequest
-	err = json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	role, err := models.GetUserRoleInOrganization(user.Id, request.OrganizationId)
-
-	if err != nil {
-		http.Error(w, "Error checking user permissions", http.StatusInternalServerError)
-		return
-	}
-	if role == "" {
-		http.Error(w, "User is not a member of this organization", http.StatusForbidden)
-		return
-	}
-
-	org, _ := models.GetOrganizationById(request.OrganizationId)
-	if org.IsPersonal {
-		http.Error(w, "Cannot assign members to personal organization", http.StatusBadRequest)
-		return
-	}
-
-	if !models.RoleCanAddRole(role, request.Role) {
-		http.Error(w, "Unauthorized to assign "+request.Role+"s to this organization", http.StatusForbidden)
-		return
-	}
-
-	err = models.AssignMemberToOrganization(request.UserId, request.Role, request.OrganizationId)
+	// Refresh the cookie to update the active org within the cookie
+	fullUser, err := models.GetUserById(user.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	refreshCookie(fullUser, w)
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func makeActiveOrganizationEndpoint(w http.ResponseWriter, r *http.Request) {
