@@ -40,6 +40,7 @@ function getLoginInfo() {
         }
     });
 }
+
 function initializeMainContent() {
     const nameInput = document.getElementById('name');
     const nameGroup = document.getElementById('name-group');

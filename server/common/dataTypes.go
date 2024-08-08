@@ -33,6 +33,7 @@ type OrganizationMember struct {
 	UserEmail        string
 	OrganizationName string
 	UserRole         string
+	IsPersonal       bool
 }
 
 type UserDetails struct {

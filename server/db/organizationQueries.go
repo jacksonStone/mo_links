@@ -149,7 +149,7 @@ func DbGetOrganizationMembers(organizationId int64) ([]common.OrganizationMember
 
 func getUsersOrganizationAndRoleForEachStmt() *sql.Stmt {
 	return getQuery(`
-    SELECT o.id, o.name, m.user_id, u.email, m.role
+    SELECT o.id, o.name, m.user_id, u.email, m.role, o.is_personal
     FROM mo_links_organizations o
     JOIN mo_links_organization_memberships m ON o.id = m.organization_id
     JOIN mo_links_users u ON m.user_id = u.id
@@ -165,7 +165,7 @@ func DbGetUsersOrganizationAndRoleForEach(userId int64) ([]common.OrganizationMe
 	var members []common.OrganizationMember
 	for rows.Next() {
 		var member common.OrganizationMember
-		err := rows.Scan(&member.OrganizationId, &member.OrganizationName, &member.UserId, &member.UserEmail, &member.UserRole)
+		err := rows.Scan(&member.OrganizationId, &member.OrganizationName, &member.UserId, &member.UserEmail, &member.UserRole, &member.IsPersonal)
 		if err != nil {
 			return nil, err
 		}

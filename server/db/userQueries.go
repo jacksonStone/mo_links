@@ -96,7 +96,6 @@ func userByVerificationTokenStmt() *sql.Stmt {
 	SELECT id, email, active_organization_id, verification_token, verification_token_expires_at, verified_email FROM mo_links_users WHERE verification_token = ? AND email = ? LIMIT 1`)
 }
 func DbGetUserByVerificationToken(token string, userEmail string) (common.User, error) {
-	fmt.Println("Getting user by verification token", "token", token, "email", userEmail)
 	row := userByVerificationTokenStmt().QueryRow(token, userEmail)
 	var user common.User
 	err := row.Scan(&user.Id, &user.Email, &user.ActiveOrganizationId, &user.VerificationToken, &user.VerificationTokenExpiresAt, &user.VerifiedEmail)

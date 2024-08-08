@@ -5,7 +5,6 @@
     "description": "Redirects \"mo/\" links to molinks.me to allow very short links - specific to your organization",
     "permissions": [
       "declarativeNetRequest",
-      "activeTab",
       "webNavigation",
       "tabs"
     ],

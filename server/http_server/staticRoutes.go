@@ -17,6 +17,7 @@ func initializeStaticRoutes() {
 	http.HandleFunc("/____reserved/login_page", loginPageEndpoint)
 	http.HandleFunc("/____reserved/static/", serveStaticFiles)
 	http.HandleFunc("/____reserved/verified_email", serveVerifiedEmailPage)
+	http.HandleFunc("/____reserved/get_started", serveGetStartedPage)
 	http.HandleFunc("/favicon.ico", faviconEndpoint)
 
 }
@@ -58,6 +59,10 @@ func faviconEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 func ServeHomePage(w http.ResponseWriter) {
 	returnStaticFile(w, "static/index.html")
+}
+
+func serveGetStartedPage(w http.ResponseWriter, r *http.Request) {
+	returnStaticFile(w, "static/get_started.html")
 }
 
 func serveCreateOrganizationPage(w http.ResponseWriter, r *http.Request) {

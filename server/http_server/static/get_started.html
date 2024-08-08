@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mo Links - Getting Started</title>
+    <link rel="stylesheet" href="/____reserved/static/index.css">
+    <script src="/____reserved/static/ping.js"></script>
+    <style>
+        .step {
+            display: block;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .step h3 {
+            margin-top: 0;
+        }
+        .step-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" style="display: block;">
+        <h1>Getting Started</h1>
+        <div class="step">
+            <h3><span class="step-number">1.</span>Install the Chrome Extension</h3>
+            <p>Enables Chrome to correctly link out to your Mo Links when you type mo/some-link into the address bar.</p>
+            <a href="https://chromewebstore.google.com/detail/mo-links/gjekhimkngocfejgpdidnldbapbcpjal" class="button" target="_blank">Add to Chrome</a>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">2.</span>Install the VSCode Extension</h3>
+            <p>A simple extension that will render mo/your-links as clickable links in your editor window.</p>
+            <a href="https://marketplace.visualstudio.com/items?itemName=MoLinks.mo-links" class="button" target="_blank">Install for VSCode</a>
+        </div>
+
+        <div class="step" id="create-organization" style="display: none;">
+            <h3><span class="step-number" id="create-org-step-number">3.</span>Create an Organization</h3>
+            <p>Mo Links are private within an organization. You can create one to have a private repository of links within your team.</p>
+            <a href="/____reserved/create_organization" class="button" target="_blank">Create Organization</a>
+        </div>
+
+        <div class="step" id="invite-others" style="display: none;">
+            <h3><span class="step-number" id="invite-others-step-number">4.</span>Invite Others to Your Organization</h3>
+            <p>Invite others to your organization so they can use Mo Links you have created and vice versa.</p>            
+            <a href="/____reserved/edit_organization" class="button" target="_blank">Manage Organization</a>
+        </div>
+
+        <a href="/____reserved/" class="button" style="margin-top: 20px;" target="_blank">Back to Dashboard</a>
+    </div>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            const response = await fetch('/____reserved/api/me');
+            const userData = await response.json();
+            console.log(userData);
+            debugger;
+            const createOrgStep = document.getElementById('create-organization');
+            const inviteOthersStep = document.getElementById('invite-others');
+            const orgId = userData.ActiveOrganizationId;
+            const membership = userData.Memberships.find(m => m.OrganizationId === orgId);
+            const isPersonal = membership.IsPersonal;
+            const currentRole = membership.UserRole;
+            if (!isPersonal) {
+                // They are already in a non-personal org, so we don't need to show them the create org step
+                createOrgStep.style.display = 'none';
+            } else {
+                createOrgStep.style.display = 'block';
+            }
+            
+            if (currentRole === 'Owner' || currentRole === 'Admin') {
+                inviteOthersStep.style.display = 'block';
+                if(!isPersonal) {
+                    document.getElementById('invite-others-step-number').innerText = '3.';
+                }
+            } else {
+                inviteOthersStep.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+    });
+</script>
+</html>
