@@ -66,159 +66,159 @@
                 </tbody>
             </table>
         </div>
-        <a href="/" class="button" style="margin-top: 20px;" target="_blank">Back to Dashboard</a>
+    </div>
+    <a href="/" class="button" style="margin-top: 20px;" target="_blank">Back to Dashboard</a>
 
-        <script>
-            let currentOrganizationId = null;
+</body>
+<script>
+    let currentOrganizationId = null;
 
-            function populateOrganizationSelect() {
-                Promise.all([
-                    fetch('/____reserved/api/organizations' ).then(response => response.json()),
-                    fetch('/____reserved/api/me').then(response => response.json())
-                ]).then(([organizations, me]) => {
-                    const select = document.getElementById('organization-select');
-                    console.log(organizations);
-                    console.log(me);
-                    picklistOrgs = []
-                    select.value = me.ActiveOrganizationId;
-                    select.innerHTML = '';
-                    me.Memberships.forEach(membership => {
-                        if (membership.UserRole !== "Member" && 
-                        organizations.find(org => org.Id === membership.OrganizationId && org.IsPersonal === false)) {
-                            picklistOrgs.push(membership);
-                            const option = document.createElement('option');
-                            option.value = membership.OrganizationId;
-                            option.textContent = membership.OrganizationName;
-                            select.appendChild(option);
-                        }
-                    });
-                    
-                    if(picklistOrgs.length === 0) {
-                        select.value = "";
-                        select.disabled = true;
-                    }
-                    if(picklistOrgs.length === 1) {
-                        currentOrganizationId = picklistOrgs[0].OrganizationId;
-                        select.value = currentOrganizationId;
-                        select.disabled = true;
-                    }
-                    if(picklistOrgs.length > 1) {
-                        select.disabled = false;
-                        if(picklistOrgs.find(org => org.OrganizationId === me.ActiveOrganizationId)) {
-                            select.value = me.ActiveOrganizationId;
-                            currentOrganizationId = me.ActiveOrganizationId;
-                        } else {
-                            select.value = picklistOrgs[0].OrganizationId;
-                            currentOrganizationId = picklistOrgs[0].OrganizationId;
-                        }
-                    }
-                    if(currentOrganizationId) {
-                        return updateMembersAndInvitesTable();
-                    }
-                });
-            }
-
-            function updateMembersAndInvitesTable() {
-                Promise.all([
-                    fetch('/____reserved/api/get_organization_invites', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ organizationId: parseInt(currentOrganizationId) })
-                    }).then(response => response.json()),
-                    fetch('/____reserved/api/organization/members', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ organizationId: parseInt(currentOrganizationId) })
-                    }).then(response => response.json())
-                ])
-                    .then(([invites, members]) => {
-                        const tableBody = document.getElementById('members-invites-list');
-                        tableBody.innerHTML = '';
-
-                        // Add pending invites
-                        invites.filter(invite => !invite.Accepted).forEach(invite => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                    <td>${invite.InviteeEmail}</td>
-                    <td>Pending</td>
-                    <td>
-                        <button onclick="cancelInvite('${invite.InviteeEmail}')">Cancel Invite</button>
-                    </td>
-                `;
-                            tableBody.appendChild(row);
-                        });
-
-                        // Add members
-                        members.forEach(member => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                    <td>${member.UserEmail}</td>
-                    <td>${member.UserRole}</td>
-                    <td>
-                        
-                    </td>
-                `;
-                            tableBody.appendChild(row);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error fetching members and invites:', error);
-                        // Optionally, display an error message to the user
-                    });
-            }
-            /**
-             * ${member.UserRole !== 'Owner' ? `
-                                <button onclick="changeMemberRole(${member.UserId}, '${member.UserRole === 'Admin' ? 'Member' : 'Admin'}')">
-                                    ${member.UserRole === 'Admin' ? 'Demote to Member' : 'Promote to Admin'}
-                                </button>
-                                <button onclick="removeMember(${member.UserId})">Remove</button>
-                            ` : ''}
-            */
-
-            function cancelInvite(email) {
-                // Implement invite cancellation logic here
-                alert(`Cancelling invite for ${email} not implemented yet`);
-            }
-
-            function sendInvite() {
-                const email = document.getElementById('invite-email').value;
-                fetch('/____reserved/api/send_invite', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        organizationId: parseInt(currentOrganizationId),
-                        inviteeEmail: email,
-                        emailMessage: 'You have been invited to join our organization on MoLinks!'
-                    }),
-                })
-                    .then(response => {
-                        if (response.ok) {
-                            alert('Invitation sent successfully');
-                            updateMembersAndInvitesTable();
-                        } else {
-                            alert('Failed to send invitation');
-                        }
-                    });
-            }
-
-            function removeMember(userId) {
-                // Implement member removal logic here
-                alert('Member removal not implemented yet');
-            }
-
-            document.getElementById('organization-select').addEventListener('change', function () {
-                currentOrganizationId = this.value;
-                if (currentOrganizationId) {
-                    updateMembersAndInvitesTable();
+    function populateOrganizationSelect() {
+        Promise.all([
+            fetch('/____reserved/api/organizations' ).then(response => response.json()),
+            fetch('/____reserved/api/me').then(response => response.json())
+        ]).then(([organizations, me]) => {
+            const select = document.getElementById('organization-select');
+            console.log(organizations);
+            console.log(me);
+            picklistOrgs = []
+            select.value = me.ActiveOrganizationId;
+            select.innerHTML = '';
+            me.Memberships.forEach(membership => {
+                if (membership.UserRole !== "Member" && 
+                organizations.find(org => org.Id === membership.OrganizationId && org.IsPersonal === false)) {
+                    picklistOrgs.push(membership);
+                    const option = document.createElement('option');
+                    option.value = membership.OrganizationId;
+                    option.textContent = membership.OrganizationName;
+                    select.appendChild(option);
                 }
             });
+            
+            if(picklistOrgs.length === 0) {
+                select.value = "";
+                select.disabled = true;
+            }
+            if(picklistOrgs.length === 1) {
+                currentOrganizationId = picklistOrgs[0].OrganizationId;
+                select.value = currentOrganizationId;
+                select.disabled = true;
+            }
+            if(picklistOrgs.length > 1) {
+                select.disabled = false;
+                if(picklistOrgs.find(org => org.OrganizationId === me.ActiveOrganizationId)) {
+                    select.value = me.ActiveOrganizationId;
+                    currentOrganizationId = me.ActiveOrganizationId;
+                } else {
+                    select.value = picklistOrgs[0].OrganizationId;
+                    currentOrganizationId = picklistOrgs[0].OrganizationId;
+                }
+            }
+            if(currentOrganizationId) {
+                return updateMembersAndInvitesTable();
+            }
+        });
+    }
 
-            document.addEventListener('DOMContentLoaded', function () {
-                populateOrganizationSelect();
+    function updateMembersAndInvitesTable() {
+        Promise.all([
+            fetch('/____reserved/api/get_organization_invites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ organizationId: parseInt(currentOrganizationId) })
+            }).then(response => response.json()),
+            fetch('/____reserved/api/organization/members', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ organizationId: parseInt(currentOrganizationId) })
+            }).then(response => response.json())
+        ])
+            .then(([invites, members]) => {
+                const tableBody = document.getElementById('members-invites-list');
+                tableBody.innerHTML = '';
+
+                // Add pending invites
+                invites.filter(invite => !invite.Accepted).forEach(invite => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+            <td>${invite.InviteeEmail}</td>
+            <td>Pending</td>
+            <td>
+                <button onclick="cancelInvite('${invite.InviteeEmail}')">Cancel Invite</button>
+            </td>
+        `;
+                    tableBody.appendChild(row);
+                });
+
+                // Add members
+                members.forEach(member => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+            <td>${member.UserEmail}</td>
+            <td>${member.UserRole}</td>
+            <td>
+                
+            </td>
+        `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching members and invites:', error);
+                // Optionally, display an error message to the user
             });
-        </script>
-</body>
+    }
+    /**
+     * ${member.UserRole !== 'Owner' ? `
+                        <button onclick="changeMemberRole(${member.UserId}, '${member.UserRole === 'Admin' ? 'Member' : 'Admin'}')">
+                            ${member.UserRole === 'Admin' ? 'Demote to Member' : 'Promote to Admin'}
+                        </button>
+                        <button onclick="removeMember(${member.UserId})">Remove</button>
+                    ` : ''}
+    */
 
+    function cancelInvite(email) {
+        // Implement invite cancellation logic here
+        alert(`Cancelling invite for ${email} not implemented yet`);
+    }
+
+    function sendInvite() {
+        const email = document.getElementById('invite-email').value;
+        fetch('/____reserved/api/send_invite', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                organizationId: parseInt(currentOrganizationId),
+                inviteeEmail: email,
+                emailMessage: 'You have been invited to join our organization on MoLinks!'
+            }),
+        })
+            .then(response => {
+                if (response.ok) {
+                    alert('Invitation sent successfully');
+                    updateMembersAndInvitesTable();
+                } else {
+                    alert('Failed to send invitation');
+                }
+            });
+    }
+
+    function removeMember(userId) {
+        // Implement member removal logic here
+        alert('Member removal not implemented yet');
+    }
+
+    document.getElementById('organization-select').addEventListener('change', function () {
+        currentOrganizationId = this.value;
+        if (currentOrganizationId) {
+            updateMembersAndInvitesTable();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        populateOrganizationSelect();
+    });
+</script>
 </html>
