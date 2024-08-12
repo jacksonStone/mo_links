@@ -2,6 +2,7 @@ package http_server
 
 import (
 	"embed"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -18,6 +19,7 @@ func initializeStaticRoutes() {
 	http.HandleFunc("/____reserved/static/", serveStaticFiles)
 	http.HandleFunc("/____reserved/verified_email", serveVerifiedEmailPage)
 	http.HandleFunc("/____reserved/get_started", serveGetStartedPage)
+	http.HandleFunc("/____reserved/hop", serveHopPage)
 	http.HandleFunc("/favicon.ico", faviconEndpoint)
 
 }
@@ -49,6 +51,12 @@ func returnStaticFile(w http.ResponseWriter, path string) {
 
 func serveVerifiedEmailPage(w http.ResponseWriter, r *http.Request) {
 	returnStaticFile(w, "static/verified_email.html")
+}
+
+func serveHopPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("serving hop page")
+	w.Header().Set("Cache-Control", "public, max-age=31536000")
+	returnStaticFile(w, "static/hop.html")
 }
 
 func faviconEndpoint(w http.ResponseWriter, r *http.Request) {

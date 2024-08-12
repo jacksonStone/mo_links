@@ -16,11 +16,13 @@ const searchSites = [
         // If the browser attempts to pipe exactly mo or mo/ to the search engine, redirect to the main molink page
         // as this is the user typing mo directly into the URL address bar
         if (searchTerm == "mo") {
-          chrome.tabs.update(details.tabId, {url: "https://www.molinks.me"});
+          chrome.tabs.update(details.tabId, {url: "https://www.molinks.me/____reserved/hop?next="});
         }
-        else if (searchTerm == "mo/") {
-          chrome.tabs.update(details.tabId, {url: "https://www.molinks.me/" + searchParams.get("q").substring(2)});
-        }
+        // If the browser attempts to pipe exactly mo/some-thing to the search engine, redirect to the main molink page
+        // as this is the user typing mo directly into the URL address bar
+        else if (searchTerm.startsWith("mo/")) {
+          chrome.tabs.update(details.tabId, {url: "https://www.molinks.me/____reserved/hop?next=" + encodeURIComponent(searchParams.get(site.query).substring(3))});
+        } 
       }
     }
   });
