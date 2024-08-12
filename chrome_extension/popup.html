@@ -91,6 +91,62 @@
             text-decoration: underline;
         }
     </style>
+    <style>
+           body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .login-btn {
+            width: 48%;
+            padding: 10px;
+            background-color: #6b7281;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .login-btn:hover {
+            background-color: #575d69;
+        }
+        .jas-watermark {
+            font-size: 0.8em;
+            margin-top: 40px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -105,6 +161,14 @@
             </div>
             <input type="url" id="url" placeholder="URL">
             <button id="submit">Mo Link It</button>
+        </div>
+        <div id="login-content" style="display: none;">
+            <input type="text" id="email" placeholder="Email" />
+            <input type="password" id="password" placeholder="Password" />
+            <div class="button-container">
+                <button class="login-btn" id="login">Login</button>
+                <button class="login-btn" id="signup">Signup</button>
+            </div>
         </div>
         <a href="#" class="subtle-link" id="see-links">Edit Mo Links</a>
     </div>

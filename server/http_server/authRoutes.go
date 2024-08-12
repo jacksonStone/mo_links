@@ -2,6 +2,7 @@ package http_server
 
 import (
 	"encoding/json"
+	"mo_links/common"
 	"mo_links/db"
 	"mo_links/models"
 	"net/http"
@@ -16,6 +17,39 @@ func initializeAuthRoutes() {
 	http.HandleFunc("/____reserved/api/login", loginEndpoint)
 	http.HandleFunc("/____reserved/api/signup", signupEndpoint)
 	http.HandleFunc("/____reserved/api/test_cookie", testCookieEndpoint)
+	http.HandleFunc("/____reserved/api/refresh_token", refreshTokenEndpoint)
+}
+func refreshTokenEndpoint(w http.ResponseWriter, r *http.Request) {
+	// get token from the query
+	// Allow CORS - the extension needs this
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	// Handle preflight request
+	if r.Method == http.MethodOptions {
+		return
+	}
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "token is required", http.StatusBadRequest)
+		return
+	}
+	trimmedUser, err := getDecryptedToken(token)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	user, err := models.GetUserById(trimmedUser.Id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	refreshToken, err := refreshToken(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte(refreshToken))
 }
 
 func testCookieEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -27,18 +61,37 @@ func testCookieEndpoint(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		return
 	}
-	// mo/goo
-	user, err := getUserInCookies(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
+	token := r.URL.Query().Get("token")
+	var trimmedUser common.TrimmedUser
+	if token != "" {
+		user, err := getDecryptedToken(token)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		trimmedUser = user
+	} else {
+		user, err := getUserInCookies(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		trimmedUser = user
 	}
 	// Send user as json
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(trimmedUser)
 }
 
 func signupEndpoint(w http.ResponseWriter, r *http.Request) {
+	// Allow CORS - the extension needs this
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	// Handle preflight request
+	if r.Method == http.MethodOptions {
+		return
+	}
 	// Grab email and password from request
 	// Verify the user does not exist with that email, create user, then login.
 	var request loginRequest
@@ -58,10 +111,18 @@ func signupEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attemptLogin(w, userId, request.Password)
+	attemptLogin(r, w, userId, request.Password)
 }
 
 func loginEndpoint(w http.ResponseWriter, r *http.Request) {
+	// Allow CORS - the extension needs this
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	// Handle preflight request
+	if r.Method == http.MethodOptions {
+		return
+	}
 	var request loginRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
@@ -73,5 +134,5 @@ func loginEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid login, no user with that email or password", http.StatusBadRequest)
 		return
 	}
-	attemptLogin(w, userId, request.Password)
+	attemptLogin(r, w, userId, request.Password)
 }

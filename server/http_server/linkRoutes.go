@@ -64,11 +64,6 @@ func handleAttemptedMoLink(w http.ResponseWriter, r *http.Request) {
 }
 
 func addLinkEndpoint(w http.ResponseWriter, r *http.Request) {
-	user, err := getVerifiedUserInCookies(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
 	// Allow CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -77,6 +72,12 @@ func addLinkEndpoint(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		return
 	}
+	user, err := getVerifiedUserInCookies(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	var request AddLinkRequest
 	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {

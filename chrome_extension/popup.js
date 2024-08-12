@@ -29,9 +29,19 @@ function surfaceError(message) {
     document.getElementById("error-text").textContent = message;
     nameGroup.classList.add('error');
 }
+async function store(key, str) {
+    return localStorage.setItem(key, str);
+}
+async function get(key) {
+    return localStorage.getItem(key);
+}
 let emailVerified;
-function getLoginInfo() {
-    return fetch(root + '/____reserved/api/test_cookie').then(response => response.json()).then(data => {
+async function getLoginInfo() {
+    const token = await get("token");
+    if (!token) {
+        throw new Error("Must login");
+    }
+    return fetch(root + '/____reserved/api/test_cookie?token=' + encodeURIComponent(token)).then(response => response.json()).then(data => {
         if (data.verifiedEmail) {
             emailVerified = true;
         } else {
@@ -39,6 +49,63 @@ function getLoginInfo() {
             throw new Error("Email not verified");
         }
     });
+}
+async function refreshLoginInfo() {
+    const token = await get("token");
+    if (!token) {
+        throw new Error("Must login");
+    }
+    return fetch(root + '/____reserved/api/refresh_token?token=' + encodeURIComponent(token))
+    .then(response => response.text()).then(data => {
+        store("token", data);
+        return getLoginInfo();
+    }).catch(error => {
+        throw error;
+    });
+}
+
+function login(e) {
+    e.preventDefault();
+    const email = document.getElementById("email").value
+    const password = document.getElementById("password").value
+    fetch(root + "/____reserved/api/login?get_token=true", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+    })
+        .then((res) => {
+            if (res.status === 200) {
+                console.log("Login successful")
+                return res.text().then(text => {
+                    document.getElementById("login-content").style.display = "none";
+                    document.getElementById("main-content").style.display = "block";
+                   return store("token", text);
+                })
+                .then(refreshLoginInfo);
+            } else {
+                alert("Invalid email or password");
+            }
+        });
+}
+function signup(e) {
+    e.preventDefault();
+    const email = document.getElementById("email").value
+    const password = document.getElementById("password").value
+    fetch(root + "/____reserved/api/signup?get_token=true", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+    })
+        .then((res) => {
+            if (res.status === 200) {   
+                console.log("Login successful")
+                return res.text().then(text => {
+                    document.getElementById("login-content").style.display = "none";
+                    document.getElementById("main-content").style.display = "block";
+                    return store("token", text);
+                }).then(refreshLoginInfo);
+            } else {
+                alert(res.message);
+            }
+        });
 }
 
 function initializeMainContent() {
@@ -69,15 +136,16 @@ function initializeMainContent() {
 
 
 
-    document.getElementById('submit').addEventListener('click', function () {
+    document.getElementById('submit').addEventListener('click', async function () {
         let name = nameInput.value;
         let url = urlInput.value;
         // Sanitize name and url
         name = name.trim();
         url = url.trim();
+        const token = await get("token");
         if (validateName(name) && validateUrl(url) && name && url) {
             hideError()
-            fetch(root + '/____reserved/api/add', {
+            fetch(root + '/____reserved/api/add?token=' + encodeURIComponent(token), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -108,17 +176,21 @@ function initializeMainContent() {
 }
 document.addEventListener('DOMContentLoaded', function () {
         // Add event listener for the "See Your Mo Links" link
+    document.getElementById('login').addEventListener('click', login);
+    document.getElementById('signup').addEventListener('click', signup);
     document.getElementById('see-links').addEventListener('click', function (e) {
         e.preventDefault(); // Prevent the default link behavior
         chrome.tabs.create({ url: root });
     });
-   getLoginInfo().then(initializeMainContent).catch(error => {
+    refreshLoginInfo().then(initializeMainContent).catch(error => {
     document.getElementById("main-content").style.display = "none";
+    document.getElementById("login-content").style.display = "block";
     if (emailVerified === undefined) {
-        document.getElementById("see-links").textContent = "Login/Signup Here";
+        document.getElementById("see-links").textContent = "Signup Here";
     } else if(emailVerified === false) {
         document.getElementById("see-links").textContent = "Email not yet verified, check email for verification link";
         document.getElementById("main-content").style.display = "none";
+        document.getElementById("login-content").style.display = "block";
     }
    });
 });
