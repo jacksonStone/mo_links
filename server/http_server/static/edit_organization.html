@@ -138,13 +138,13 @@
                 tableBody.innerHTML = '';
 
                 // Add pending invites
-                invites.filter(invite => !invite.Accepted).forEach(invite => {
+                (invites || []).filter(invite => !invite.Accepted).forEach(invite => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
             <td>${invite.InviteeEmail}</td>
             <td>Pending</td>
             <td>
-                <button onclick="cancelInvite('${invite.InviteeEmail}')">Cancel Invite</button>
+                <button onclick="cancelInvite('${invite.Id}')">Cancel Invite</button>
             </td>
         `;
                     tableBody.appendChild(row);
@@ -177,9 +177,20 @@
                     ` : ''}
     */
 
-    function cancelInvite(email) {
+    function cancelInvite(id) {
         // Implement invite cancellation logic here
-        alert(`Cancelling invite for ${email} not implemented yet`);
+        fetch('/____reserved/api/cancel_invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inviteId: parseInt(id) })
+        }).then(response => {
+            if (response.ok) {
+                alert('Invitation cancelled successfully');
+                updateMembersAndInvitesTable();
+            } else {
+                alert('Failed to cancel invitation');
+            }
+        });
     }
 
     function sendInvite() {

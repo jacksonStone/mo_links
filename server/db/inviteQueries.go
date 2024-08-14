@@ -114,3 +114,28 @@ func DbGetOrganizationInvites(organizationId int64) ([]common.Invite, error) {
 	}
 	return invites, nil
 }
+func getInviteByIdStmt() *sql.Stmt {
+	return getQuery(`
+	SELECT id, organization_id, invitee_email, sent_at, created_by_user_id, accepted
+	FROM mo_links_membership_invites
+	WHERE id = ?`)
+}
+
+func DbGetInviteById(inviteId int64) (common.Invite, error) {
+	invite := common.Invite{}
+	err := getInviteByIdStmt().QueryRow(inviteId).Scan(
+		&invite.Id, &invite.OrganizationId, &invite.InviteeEmail, &invite.SentAt, &invite.CreatedByUserId, &invite.Accepted,
+	)
+	return invite, err
+}
+
+func cancelInviteStmt() *sql.Stmt {
+	return getQuery(`
+	DELETE FROM mo_links_membership_invites
+	WHERE id = ?`)
+}
+
+func DbCancelInvite(inviteId int64) error {
+	_, err := cancelInviteStmt().Exec(inviteId)
+	return err
+}

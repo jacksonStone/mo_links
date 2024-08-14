@@ -19,6 +19,9 @@ type AcceptInviteRequest struct {
 type GetOrganizationInvitesRequest struct {
 	OrganizationId int64 `json:"organizationId"`
 }
+type CancelInviteRequest struct {
+	InviteId int64 `json:"inviteId"`
+}
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
@@ -26,6 +29,7 @@ func initializeInvitesRoute() {
 	http.HandleFunc("/____reserved/api/send_invite", sendInviteEndpoint)
 	http.HandleFunc("/____reserved/api/accept_invite", acceptInviteEndpoint)
 	http.HandleFunc("/____reserved/api/get_organization_invites", getOrganizationInvitesEndpoint)
+	http.HandleFunc("/____reserved/api/cancel_invite", cancelInviteEndpoint)
 }
 
 func validEmail(email string) bool {
@@ -145,4 +149,37 @@ func getOrganizationInvitesEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(invites)
+}
+
+func cancelInviteEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getVerifiedUserInCookies(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	var req CancelInviteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	invite, err := models.GetInviteById(req.InviteId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	role, err := models.GetUserRoleInOrganization(user.Id, invite.OrganizationId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	if role != common.RoleAdmin && role != common.RoleOwner {
+		http.Error(w, "unauthorized to cancel invite", http.StatusUnauthorized)
+		return
+	}
+	if invite.Accepted {
+		http.Error(w, "invite already accepted", http.StatusBadRequest)
+		return
+	}
+	models.CancelInvite(invite.Id)
+	w.WriteHeader(http.StatusOK)
 }

@@ -69,3 +69,10 @@ func GetOrganizationInvites(organizationId int64) ([]common.Invite, error) {
 func DbGetInviteByTokenAndUser(token string, userEmail string) (common.Invite, error) {
 	return db.DbGetInviteByTokenAndUser(token, userEmail)
 }
+
+func GetInviteById(inviteId int64) (common.Invite, error) {
+	return db.DbGetInviteById(inviteId)
+}
+func CancelInvite(inviteId int64) error {
+	return db.DbCancelInvite(inviteId)
+}
