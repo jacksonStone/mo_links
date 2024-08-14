@@ -59,8 +59,6 @@ async function refreshLoginInfo() {
     .then(response => response.text()).then(data => {
         store("token", data);
         return getLoginInfo();
-    }).catch(error => {
-        throw error;
     });
 }
 
@@ -79,8 +77,7 @@ function login(e) {
                     document.getElementById("login-content").style.display = "none";
                     document.getElementById("main-content").style.display = "block";
                    return store("token", text);
-                })
-                .then(refreshLoginInfo);
+                }).then(renderPage);
             } else {
                 alert("Invalid email or password");
             }
@@ -101,13 +98,13 @@ function signup(e) {
                     document.getElementById("login-content").style.display = "none";
                     document.getElementById("main-content").style.display = "block";
                     return store("token", text);
-                }).then(refreshLoginInfo);
+                }).then(renderPage);
             } else {
                 alert(res.message);
             }
         });
 }
-
+// mo/test this is a test link
 function initializeMainContent() {
     const nameInput = document.getElementById('name');
     const nameGroup = document.getElementById('name-group');
@@ -174,23 +171,27 @@ function initializeMainContent() {
         }
     });
 }
-document.addEventListener('DOMContentLoaded', function () {
-        // Add event listener for the "See Your Mo Links" link
-    document.getElementById('login').addEventListener('click', login);
-    document.getElementById('signup').addEventListener('click', signup);
-    document.getElementById('see-links').addEventListener('click', function (e) {
-        e.preventDefault(); // Prevent the default link behavior
-        chrome.tabs.create({ url: root });
-    });
-    refreshLoginInfo().then(initializeMainContent).catch(error => {
-    document.getElementById("main-content").style.display = "none";
-    document.getElementById("login-content").style.display = "block";
-    if (emailVerified === undefined) {
-        document.getElementById("see-links").textContent = "Signup Here";
-    } else if(emailVerified === false) {
-        document.getElementById("see-links").textContent = "Email not yet verified, check email for verification link";
+
+function renderPage() {
+    refreshLoginInfo().then(initializeMainContent).catch(() => {
         document.getElementById("main-content").style.display = "none";
         document.getElementById("login-content").style.display = "block";
-    }
-   });
+        if (emailVerified === undefined) {
+            document.getElementById("see-links").textContent = "Signup Here";
+        } else if(emailVerified === false) {
+            document.getElementById("see-links").textContent = "Email not yet verified, check email for verification link";
+            document.getElementById("main-content").style.display = "none";
+            document.getElementById("login-content").style.display = "none";
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('login').addEventListener('click', login);
+    document.getElementById('signup').addEventListener('click', signup);
+    document.getElementById('see-links').addEventListener('click', async function (e) {
+        e.preventDefault();
+        chrome.tabs.create({ url: root + "/____reserved/api/give_me_cookie?token=" + encodeURIComponent(await get("token")) });
+    });
+    renderPage();
 });

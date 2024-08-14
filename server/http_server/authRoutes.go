@@ -18,6 +18,35 @@ func initializeAuthRoutes() {
 	http.HandleFunc("/____reserved/api/signup", signupEndpoint)
 	http.HandleFunc("/____reserved/api/test_cookie", testCookieEndpoint)
 	http.HandleFunc("/____reserved/api/refresh_token", refreshTokenEndpoint)
+	http.HandleFunc("/____reserved/api/give_me_cookie", giveMeCookieEndpoint)
+}
+func giveMeCookieEndpoint(w http.ResponseWriter, r *http.Request) {
+	// Allow CORS - the extension needs this
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	// Handle preflight request
+	if r.Method == http.MethodOptions {
+		return
+	}
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "token is required", http.StatusBadRequest)
+		return
+	}
+	trimmedUser, err := getDecryptedToken(token)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	user, err := models.GetUserById(trimmedUser.Id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	refreshCookie(user, w)
+	// Redirect to the root
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 func refreshTokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	// get token from the query
