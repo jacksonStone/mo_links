@@ -2,6 +2,7 @@ package http_server
 
 import (
 	"encoding/json"
+	"fmt"
 	"mo_links/db"
 	"mo_links/models"
 	"net/http"
@@ -21,12 +22,23 @@ type GetOrganizationMembersRequest struct {
 type UpdateActiveOrganizationRequest struct {
 	OrganizationId int64 `json:"organizationId"`
 }
+type ChangeMemberRoleRequest struct {
+	UserId         int64  `json:"userId"`
+	OrganizationId int64  `json:"organizationId"`
+	NewRole        string `json:"newRole"`
+}
+type RemoveMemberRequest struct {
+	UserId         int64 `json:"userId"`
+	OrganizationId int64 `json:"organizationId"`
+}
 
 func initializeOrganizationRoutes() {
 	http.HandleFunc("/____reserved/api/organizations", organizationsEndpoint)
 	http.HandleFunc("/____reserved/api/organization/make_active", makeActiveOrganizationEndpoint)
 	http.HandleFunc("/____reserved/api/organization/create", createOrganizationEndpoint)
 	http.HandleFunc("/____reserved/api/organization/members", getOrganizationMembersEndpoint)
+	http.HandleFunc("/____reserved/api/organization/change_member_role", changeMemberRoleEndpoint)
+	http.HandleFunc("/____reserved/api/organization/remove_member", removeMemberEndpoint)
 }
 
 func organizationsEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -157,4 +169,74 @@ func getOrganizationMembersEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(members)
+}
+
+func changeMemberRoleEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getVerifiedUserInCookies(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	var request AssignMemberRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	role, err := models.GetUserRoleInOrganization(user.Id, request.OrganizationId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	currentUserTargetRole, err := models.GetUserRoleInOrganization(request.UserId, request.OrganizationId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Println("role", role, "currentUserTargetRole", currentUserTargetRole, "request.Role", request.Role)
+	if !models.RoleCanChangeMemberRole(role, currentUserTargetRole, request.Role) {
+		http.Error(w, "User is not authorized to change member role to that role", http.StatusForbidden)
+		return
+	}
+	err = models.ChangeUserRoleInOrganization(request.UserId, request.OrganizationId, request.Role)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func removeMemberEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getVerifiedUserInCookies(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	var request RemoveMemberRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	role, err := models.GetUserRoleInOrganization(user.Id, request.OrganizationId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	currentUserTargetRole, err := models.GetUserRoleInOrganization(request.UserId, request.OrganizationId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if !models.RoleCanRemoveUserOfRole(role, currentUserTargetRole) {
+		http.Error(w, "User is not authorized to remove this kind of member from this organization", http.StatusForbidden)
+		return
+	}
+	err = models.RemoveUserFromOrganization(request.UserId, request.OrganizationId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

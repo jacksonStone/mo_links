@@ -66,14 +66,31 @@ func GetUserRoleInOrganization(userId int64, organizationId int64) (string, erro
 func GetOrganizationById(organizationId int64) (common.Organization, error) {
 	return db.DbGetOrganizationById(organizationId)
 }
-func RoleCanAddRole(userRole string, targetRole string) bool {
-	if targetRole == common.RoleAdmin || targetRole == common.RoleOwner {
-		return userRole == common.RoleAdmin || userRole == common.RoleOwner
+func ChangeUserRoleInOrganization(userId int64, organizationId int64, newRole string) error {
+	return db.DbChangeUserRoleInOrganization(userId, organizationId, newRole)
+}
+func RemoveUserFromOrganization(userId int64, organizationId int64) error {
+	return db.DbRemoveUserFromOrganization(userId, organizationId)
+}
+func RoleCanChangeMemberRole(userRole string, currentUserTargetRole string, targetRole string) bool {
+	if targetRole != common.RoleMember && targetRole != common.RoleAdmin && targetRole != common.RoleOwner {
+		// Not a valid role to change to
+		return false
 	}
-	if targetRole == common.RoleMember {
-		return userRole == common.RoleAdmin || userRole == common.RoleOwner
+	// For now only owners can change user roles
+	return userRole == common.RoleOwner
+}
+func RoleCanRemoveUserOfRole(userRole string, targetRole string) bool {
+	if targetRole == common.RoleOwner {
+		//Cannot remove owners.
+		return false
 	}
-	return false
+	if userRole == common.RoleOwner {
+		// Owners can remove anyone otherwise
+		return true
+	}
+	// Admins can remove members
+	return userRole == common.RoleAdmin && targetRole == common.RoleMember
 }
 func RoleCanViewMembers(userRole string) bool {
 	return userRole == common.RoleAdmin || userRole == common.RoleOwner

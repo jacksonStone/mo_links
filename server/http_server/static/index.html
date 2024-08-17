@@ -39,7 +39,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            const nameInput = document.getElementById('name');
+            const nameInput = document.getElementById('molink');
             const nameGroup = document.getElementById('name-group');
             const urlInput = document.getElementById('url');
             const hideError = () => {
@@ -80,7 +80,7 @@
                             fetchLinks()
                             alert('mo/' + name + " created successfully!");
                             // Clear the form
-                            document.getElementById('name').value = '';
+                            document.getElementById('molink').value = '';
                             document.getElementById('url').value = '';
                         })
                         .catch((error) => {
@@ -203,7 +203,7 @@
                     <div class="error-text" id="error-text"></div>
                     <div class="input-wrapper">
                         <span><b>mo /</b></span>
-                        <input type="text" id="name" placeholder="mo">
+                        <input type="text" id="molink" placeholder="mo">
                     </div>
                 </div>
                 <input type="url" id="url" placeholder="URL">

@@ -121,6 +121,30 @@ func DbCreateOrganizationAndOwnerMembership(name string, userId int64) error {
 	return tx.Commit()
 }
 
+func changeUserRoleInOrganizationStmt() *sql.Stmt {
+	return getQuery(`
+    UPDATE mo_links_organization_memberships SET role = ? WHERE user_id = ? AND organization_id = ?`)
+}
+func DbChangeUserRoleInOrganization(userId int64, organizationId int64, newRole string) error {
+	_, err := changeUserRoleInOrganizationStmt().Exec(newRole, userId, organizationId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func removeUserFromOrganizationStmt() *sql.Stmt {
+	return getQuery(`
+    DELETE FROM mo_links_organization_memberships WHERE user_id = ? AND organization_id = ?`)
+}
+func DbRemoveUserFromOrganization(userId int64, organizationId int64) error {
+	_, err := removeUserFromOrganizationStmt().Exec(userId, organizationId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func getOrganizationMembersStmt() *sql.Stmt {
 	return getQuery(`
     SELECT m.organization_id, o.name, u.id, u.email, m.role 
