@@ -72,14 +72,6 @@ func sendEmail(to, subject, fromName, fromEmail, plainTextContent, htmlContent s
 	// Plain textContent is a fallback for htmlContent
 	message := mail.NewSingleEmail(formattedFrom, subject, formattedTo, plainTextContent, htmlContent)
 	client := sendgrid.NewSendClient(os.Getenv("MO_LINKS_SENDGRID_API_KEY"))
-	response, err := client.Send(message)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	} else {
-		fmt.Println(response.StatusCode)
-		fmt.Println(response.Body)
-		fmt.Println(response.Headers)
-	}
-	return nil
+	_, err := client.Send(message)
+	return err
 }

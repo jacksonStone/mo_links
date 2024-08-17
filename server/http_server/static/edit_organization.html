@@ -178,7 +178,6 @@
     */
 
     function cancelInvite(id) {
-        // Implement invite cancellation logic here
         fetch('/____reserved/api/cancel_invite', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -230,7 +229,6 @@
     }
 
     function changeMemberRole(userId, newRole) {
-        // Implement member role change logic here
         fetch('/____reserved/api/organization/change_member_role', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
