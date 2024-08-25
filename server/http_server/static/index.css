@@ -57,7 +57,6 @@ a:hover {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
-
 }
 
 h1 {
@@ -136,11 +135,19 @@ button:hover {
     padding: 2px;
     transition: transform 0.2s ease;
 }
+.icon-button-edit {
+    position:absolute;
+    right: 10px;
+    top: 10px;
+}
+.url-edit {
+    width: 300px;
+    margin-right: 20px;
+}
 
 .icon-button:hover {
     transform: scale(1.2);
     background: none;
-
 }
 
 .icon-button:focus {
@@ -198,7 +205,6 @@ button:hover {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 20px;
     width: 100%;
-    max-width: 600px;
 }
 
 table {
@@ -210,6 +216,7 @@ th, td {
     text-align: left;
     padding: 8px;
     border-bottom: 1px solid #ddd;
+    position: relative;
 }
 
 th {
@@ -234,7 +241,8 @@ th {
     text-decoration: underline;
 }
 .truncate {
-    max-width: 200px; /* Adjust this value as needed */
+    width: 300px; /* Adjust this value as needed */
+    margin-right: 20px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

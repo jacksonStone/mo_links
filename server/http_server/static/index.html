@@ -104,12 +104,14 @@
                 const membership = memberships.find(membership => membership.OrganizationId === link.OrganizationId)
                 row.innerHTML = `
                     <td><a href="#" class="copy-link" data-link="mo/${link.Name}"><span class="clipboard-icon" title="Click to copy">📋</span>mo/${link.Name}</a></td>
-                    <td><a href="${link.Url}" target="_blank" class="truncate url-display">${link.Url}</a><input type="url" class="url-edit" value="${link.Url}" style="display:none;"></td>
+                    <td><a href="${link.Url}" target="_blank" class="truncate url-display">${link.Url}</a>
+                        <input type="url" class="url-edit" value="${link.Url}" style="display:none;">
+                        <button class="edit-url icon-button icon-button-edit" data-name="${link.Name}" title="Edit URL">✏️</button>
+                        <button class="save-url icon-button icon-button-edit" data-name="${link.Name}" style="display:none;" title="Save URL">💾</button>
+                    </td>
                     <td>${membership?.OrganizationName || "Unknown"}</td>
                     <td>${link.Views}</td>
                     <td>
-                        <button class="edit-url icon-button" data-name="${link.Name}" title="Edit URL">✏️</button>
-                        <button class="save-url icon-button" data-name="${link.Name}" style="display:none;" title="Save URL">💾</button>
                         <button class="remove-link icon-button" data-name="${link.Name}" title="Remove Link">🗑️</button>
                     </td>
                 `;
@@ -117,12 +119,29 @@
 
                 const editButton = row.querySelector('.edit-url');
                 const saveButton = row.querySelector('.save-url');
+                const removeButton = row.querySelector('.remove-link');
                 const urlDisplay = row.querySelector('.url-display');
                 const urlEdit = row.querySelector('.url-edit');
-
+                
+                removeButton.addEventListener('click', function () {
+                    if (confirm("Are you sure you want to remove this link?")) {
+                        fetch('/____reserved/api/remove_link', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ id: link.Id }),
+                        }).then(response => {
+                            if (!response.ok) {
+                                throw new Error('Failed to remove link');
+                            }
+                            fetchLinks()
+                        });
+                    }
+                });
                 editButton.addEventListener('click', function () {
                     urlDisplay.style.display = 'none';
-                    urlEdit.style.display = 'inline';
+                    urlEdit.style.display = 'block';
                     editButton.style.display = 'none';
                     saveButton.style.display = 'inline';
                     urlEdit.focus();
@@ -131,13 +150,25 @@
                 saveButton.addEventListener('click', function () {
                     const newUrl = urlEdit.value;
                     if (confirm("Updating URL to " + newUrl)) {
+                        fetch('/____reserved/api/update_link', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ id: link.Id, url: newUrl }),
+                        }).then(response => {
+                            if (!response.ok) {
+                                throw new Error('Failed to update link');
+                            }
+                            urlDisplay.textContent = newUrl;
+                            urlDisplay.style.display = 'block';
+                            urlEdit.style.display = 'none';
+                            editButton.style.display = 'inline';
+                            saveButton.style.display = 'none';
+                        });
                         // Here you would typically send an API request to update the URL
                         // For now, we'll just update the display
-                        urlDisplay.textContent = newUrl;
-                        urlDisplay.style.display = 'inline';
-                        urlEdit.style.display = 'none';
-                        editButton.style.display = 'inline';
-                        saveButton.style.display = 'none';
+
                     }
                 });
             });
@@ -262,6 +293,7 @@
                         <th>URL</th>
                         <th>Organization</th>
                         <th>Views</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="links-list">
