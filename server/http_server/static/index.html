@@ -104,15 +104,42 @@
                 const membership = memberships.find(membership => membership.OrganizationId === link.OrganizationId)
                 row.innerHTML = `
                     <td><a href="#" class="copy-link" data-link="mo/${link.Name}"><span class="clipboard-icon" title="Click to copy">📋</span>mo/${link.Name}</a></td>
-                    <td><a href="${link.Url}" target="_blank" class="truncate">${link.Url}</a></td>
+                    <td><a href="${link.Url}" target="_blank" class="truncate url-display">${link.Url}</a><input type="url" class="url-edit" value="${link.Url}" style="display:none;"></td>
                     <td>${membership?.OrganizationName || "Unknown"}</td>
                     <td>${link.Views}</td>
                     <td>
-                        <button class="edit-url icon-button" data-name="${link.Name}" data-url="${link.Url}" title="Edit URL">✏️</button>
+                        <button class="edit-url icon-button" data-name="${link.Name}" title="Edit URL">✏️</button>
+                        <button class="save-url icon-button" data-name="${link.Name}" style="display:none;" title="Save URL">💾</button>
                         <button class="remove-link icon-button" data-name="${link.Name}" title="Remove Link">🗑️</button>
                     </td>
                 `;
                 linksList.appendChild(row);
+
+                const editButton = row.querySelector('.edit-url');
+                const saveButton = row.querySelector('.save-url');
+                const urlDisplay = row.querySelector('.url-display');
+                const urlEdit = row.querySelector('.url-edit');
+
+                editButton.addEventListener('click', function () {
+                    urlDisplay.style.display = 'none';
+                    urlEdit.style.display = 'inline';
+                    editButton.style.display = 'none';
+                    saveButton.style.display = 'inline';
+                    urlEdit.focus();
+                });
+
+                saveButton.addEventListener('click', function () {
+                    const newUrl = urlEdit.value;
+                    if (confirm("Updating URL to " + newUrl)) {
+                        // Here you would typically send an API request to update the URL
+                        // For now, we'll just update the display
+                        urlDisplay.textContent = newUrl;
+                        urlDisplay.style.display = 'inline';
+                        urlEdit.style.display = 'none';
+                        editButton.style.display = 'inline';
+                        saveButton.style.display = 'none';
+                    }
+                });
             });
 
             // Add click event listeners to copy links
