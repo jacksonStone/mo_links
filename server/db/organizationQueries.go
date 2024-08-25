@@ -15,6 +15,33 @@ func initializeOrganizationQueries() {
 	getUsersOrganizationAndRoleForEachStmt()
 }
 
+func DbChangeOwnerOfOrganization(userId int64, organizationId int64) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() // This will be a no-op if the transaction is committed
+	ownerUserId, err := dbGetOwnerOfOrganization(tx, organizationId)
+	if err != nil {
+		return err
+	}
+	tx.Stmt(changeUserRoleInOrganizationStmt()).Exec(common.RoleOwner, userId, organizationId)
+	tx.Stmt(changeUserRoleInOrganizationStmt()).Exec(common.RoleAdmin, ownerUserId, organizationId)
+	return tx.Commit()
+}
+func getOwnerOfOrganizationStmt() *sql.Stmt {
+	return getQuery(`
+    SELECT user_id FROM mo_links_organization_memberships WHERE organization_id = ? AND role = "` + common.RoleOwner + `" LIMIT 1`)
+}
+func dbGetOwnerOfOrganization(tx *sql.Tx, organizationId int64) (int64, error) {
+	row := tx.Stmt(getOwnerOfOrganizationStmt()).QueryRow(organizationId)
+	var userId int64
+	err := row.Scan(&userId)
+	if err != nil {
+		return 0, err
+	}
+	return userId, nil
+}
 func organizationByIdStmt() *sql.Stmt {
 	return getQuery(`
 	SELECT id, name, is_personal, created_by_user_id FROM mo_links_organizations WHERE id = ?`)

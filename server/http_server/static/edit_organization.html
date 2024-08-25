@@ -72,6 +72,8 @@
 </body>
 <script>
     let currentOrganizationId = null;
+    let currentUserId = null;
+    let currentUserRole = null;
 
     function populateOrganizationSelect() {
         Promise.all([
@@ -114,7 +116,10 @@
                     currentOrganizationId = picklistOrgs[0].OrganizationId;
                 }
             }
+            //Hacky to have this here...
             if(currentOrganizationId) {
+                currentUserId = me.Id;
+                currentUserRole = me.Memberships.find(membership => membership.OrganizationId === currentOrganizationId).UserRole;
                 return updateMembersAndInvitesTable();
             }
         });
@@ -157,14 +162,17 @@
             <td>${member.UserEmail}</td>
             <td>${member.UserRole}</td>
             <td>
-                ${member.UserRole !== 'Owner' ? `
+               ${member.UserId !== currentUserId && member.UserRole !== 'Owner' ? `
                         <button onclick="changeMemberRole(${member.UserId}, '${member.UserRole === 'Admin' ? 'Member' : 'Admin'}')">
                             ${member.UserRole === 'Admin' ? 'Demote to Member' : 'Promote to Admin'}
                         </button>
-                        <button onclick="removeMember(${member.UserId})">Remove</button>
-                    ` : ''}
-            </td>
-        `;
+                        ${currentUserRole === 'Owner' && member.UserRole === 'Admin' ? `
+                            <button onclick="transferOwnership(${member.UserId})">Transfer Ownership</button>
+                        ` : ''}
+                        ${member.UserId !== currentUserId && (currentUserRole === 'Owner' || (currentUserRole === 'Admin' && member.UserRole === 'Member')) ? `<button onclick="removeMember(${member.UserId})">Remove</button>` : ''}
+                        ` : ''}
+                        </td>
+                    `;
                     tableBody.appendChild(row);
                 });
             })
@@ -173,10 +181,12 @@
                 // Optionally, display an error message to the user
             });
     }
-    /**
-     * 
-    */
 
+    function transferOwnership(userId) {
+        if (confirm('Are you sure you want to transfer ownership? This action cannot be undone.')) {
+            changeMemberRole(userId, 'Owner');
+        }
+    }
     function cancelInvite(id) {
         fetch('/____reserved/api/cancel_invite', {
             method: 'POST',
@@ -235,7 +245,7 @@
             body: JSON.stringify({ userId: parseInt(userId), organizationId: parseInt(currentOrganizationId), role: newRole })
         }).then(response => {
             if (response.ok) {
-                alert('Member role changed successfully');
+                alert(`Member role changed successfully to ${newRole}`);
                 updateMembersAndInvitesTable();
             }
         });

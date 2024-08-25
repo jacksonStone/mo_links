@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -24,6 +25,10 @@ func initializeStaticRoutes() {
 
 }
 func serveStaticFiles(w http.ResponseWriter, r *http.Request) {
+	if strings.Contains(r.URL.Path, "..") {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
 	if strings.HasSuffix(r.URL.Path, ".css") {
 		w.Header().Set("Content-Type", "text/css")
 	}
@@ -41,12 +46,21 @@ func serveStaticFiles(w http.ResponseWriter, r *http.Request) {
 	returnStaticFile(w, strings.TrimPrefix(r.URL.Path, "/____reserved/"))
 }
 func returnStaticFile(w http.ResponseWriter, path string) {
-	bytes, err := static.ReadFile(path)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if os.Getenv("NODE_ENV") != "development" {
+		bytes, err := static.ReadFile(path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Write(bytes)
+	} else {
+		bytes, err := os.ReadFile("http_server/" + path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Write(bytes)
 	}
-	w.Write(bytes)
 }
 
 func serveVerifiedEmailPage(w http.ResponseWriter, r *http.Request) {

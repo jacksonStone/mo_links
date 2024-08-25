@@ -67,6 +67,9 @@ func GetOrganizationById(organizationId int64) (common.Organization, error) {
 	return db.DbGetOrganizationById(organizationId)
 }
 func ChangeUserRoleInOrganization(userId int64, organizationId int64, newRole string) error {
+	if newRole == common.RoleOwner {
+		return db.DbChangeOwnerOfOrganization(userId, organizationId)
+	}
 	return db.DbChangeUserRoleInOrganization(userId, organizationId, newRole)
 }
 func RemoveUserFromOrganization(userId int64, organizationId int64) error {
@@ -77,8 +80,11 @@ func RoleCanChangeMemberRole(userRole string, currentUserTargetRole string, targ
 		// Not a valid role to change to
 		return false
 	}
-	// For now only owners can change user roles
-	return userRole == common.RoleOwner
+	if userRole == common.RoleOwner {
+		// Owners can change user roles
+		return true
+	}
+	return false
 }
 func RoleCanRemoveUserOfRole(userRole string, targetRole string) bool {
 	if targetRole == common.RoleOwner {
