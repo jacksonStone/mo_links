@@ -92,6 +92,12 @@ func RoleCanRemoveUserOfRole(userRole string, targetRole string) bool {
 	// Admins can remove members
 	return userRole == common.RoleAdmin && targetRole == common.RoleMember
 }
+func RoleCanRemoveLink(userRole string) bool {
+	return userRole == common.RoleOwner || userRole == common.RoleAdmin
+}
+func RoleCanUpdateLink(userRole string) bool {
+	return userRole == common.RoleOwner || userRole == common.RoleAdmin
+}
 func RoleCanViewMembers(userRole string) bool {
 	return userRole == common.RoleAdmin || userRole == common.RoleOwner
 }

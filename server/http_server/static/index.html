@@ -92,7 +92,7 @@
             });
         });
     </script>
-     <script>
+    <script>
         // Add this function to update the links table
         function updateLinksTable(details) {
             const links = details.MoLinks
@@ -107,9 +107,14 @@
                     <td><a href="${link.Url}" target="_blank" class="truncate">${link.Url}</a></td>
                     <td>${membership?.OrganizationName || "Unknown"}</td>
                     <td>${link.Views}</td>
+                    <td>
+                        <button class="edit-url icon-button" data-name="${link.Name}" data-url="${link.Url}" title="Edit URL">✏️</button>
+                        <button class="remove-link icon-button" data-name="${link.Name}" title="Remove Link">🗑️</button>
+                    </td>
                 `;
                 linksList.appendChild(row);
             });
+
             // Add click event listeners to copy links
             document.querySelectorAll('.copy-link').forEach(link => {
                 link.addEventListener('click', function (e) {
@@ -177,9 +182,9 @@
                 }
                 window.location.reload()
             })
-            .catch(error => {
-                console.error('Error updating active organization:', error);
-            });
+                .catch(error => {
+                    console.error('Error updating active organization:', error);
+                });
         }
 
         // Modify the DOMContentLoaded event listener
@@ -192,7 +197,9 @@
 </head>
 
 <body>
-    <div id="loading" class="loading"><p>Loading...</p></div>
+    <div id="loading" class="loading">
+        <p>Loading...</p>
+    </div>
     <div id="unverified" class="unverified" style="display: none;">
         <p>Check email for a verification link.</p>
     </div>
@@ -209,7 +216,8 @@
                 <input type="url" id="url" placeholder="URL">
                 <button id="submit">Mo Link It</button>
             </div>
-            <img src="/____reserved/static/logo.svg" alt="Mo Links Logo" style="float: right; width: 150px; margin-bottom: 10px;">
+            <img src="/____reserved/static/logo.svg" alt="Mo Links Logo"
+                style="float: right; width: 150px; margin-bottom: 10px;">
         </div>
         <div class="links-table">
             <div class="membership-container">
@@ -234,7 +242,8 @@
                 </tbody>
             </table>
         </div>
-        <a href="/____reserved/get_started" class="get-started-link" style="display: block; margin: 15px; text-align: left; text-decoration: underline;">New? Get Started</a>
+        <a href="/____reserved/get_started" class="get-started-link"
+            style="display: block; text-decoration: underline; margin-top: 15px;">New? Get Started</a>
     </div>
 </body>
 

@@ -13,6 +13,7 @@ body {
     align-items: flex-start;
     padding: 20px;
 }
+
 .jas-watermark {
     font-size: 0.8em;
     margin-top: 40px;
@@ -127,7 +128,24 @@ button {
 button:hover {
     background-color: #515662;
 }
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 2px;
+    transition: transform 0.2s ease;
+}
 
+.icon-button:hover {
+    transform: scale(1.2);
+    background: none;
+
+}
+
+.icon-button:focus {
+    outline: none;
+}
 .membership-container {
     display: flex;
     align-items: center;

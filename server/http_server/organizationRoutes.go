@@ -2,7 +2,6 @@ package http_server
 
 import (
 	"encoding/json"
-	"fmt"
 	"mo_links/db"
 	"mo_links/models"
 	"net/http"
@@ -194,7 +193,6 @@ func changeMemberRoleEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("role", role, "currentUserTargetRole", currentUserTargetRole, "request.Role", request.Role)
 	if !models.RoleCanChangeMemberRole(role, currentUserTargetRole, request.Role) {
 		http.Error(w, "User is not authorized to change member role to that role", http.StatusForbidden)
 		return

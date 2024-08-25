@@ -13,8 +13,19 @@ type AddLinkRequest struct {
 	Name string `json:"name"`
 }
 
+type RemoveLinkRequest struct {
+	Id int64 `json:"id"`
+}
+
+type UpdateLinkRequest struct {
+	Id  int64  `json:"id"`
+	Url string `json:"url"`
+}
+
 func initializeLinkRoutes() {
 	http.HandleFunc("/____reserved/api/add", addLinkEndpoint)
+	http.HandleFunc("/____reserved/api/remove_link", removeLinkEndpoint)
+	http.HandleFunc("/____reserved/api/update_link", updateLinkEndpoint)
 	http.HandleFunc("/", handleAttemptedMoLink)
 }
 func redirectToLoginWithNext(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +100,77 @@ func addLinkEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusExpectationFailed)
 		return
 	}
+}
+
+func removeLinkEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getVerifiedUserInCookies(r)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
+
+	var request RemoveLinkRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	link, err := models.GetLink(request.Id)
+	if err != nil {
+		http.Error(w, "Link not found", http.StatusNotFound)
+		return
+	}
+	/** User must be an admin or the creator of the link, and still within the organization */
+	role, err := models.GetUserRoleInOrganization(user.Id, link.OrganizationId)
+	if err != nil {
+		http.Error(w, "User is not within organization", http.StatusUnauthorized)
+		return
+	}
+	if !models.RoleCanRemoveLink(role) && user.Id != link.CreatedByUserId {
+		http.Error(w, "User is not authorized to remove this link", http.StatusForbidden)
+		return
+	}
+
+	err = models.RemoveLink(request.Id)
+	if err != nil {
+		http.Error(w, "Failed to remove link", http.StatusExpectationFailed)
+		return
+	}
+}
+
+func updateLinkEndpoint(w http.ResponseWriter, r *http.Request) {
+	user, err := getVerifiedUserInCookies(r)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
+	var request UpdateLinkRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	link, err := models.GetLink(request.Id)
+	if err != nil {
+		http.Error(w, "Link not found", http.StatusNotFound)
+		return
+	}
+	/** User must be an admin or the creator of the link */
+	role, err := models.GetUserRoleInOrganization(user.Id, link.OrganizationId)
+	if err != nil {
+		http.Error(w, "User is not within organization", http.StatusUnauthorized)
+		return
+	}
+	if !models.RoleCanUpdateLink(role) && user.Id != link.CreatedByUserId {
+		http.Error(w, "User is not authorized to update this link", http.StatusForbidden)
+		return
+	}
+	err = models.UpdateLink(request.Id, request.Url)
+	if err != nil {
+		http.Error(w, "Failed to update link", http.StatusExpectationFailed)
+		return
+	}
+
 }
 
 func decodeLink(r *http.Request, organizationId int64) ([]string, error) {

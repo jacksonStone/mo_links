@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"mo_links/common"
 )
 
@@ -46,7 +45,6 @@ func setUserActiveOrganizationStmt() *sql.Stmt {
 		UPDATE mo_links_users SET active_organization_id = ? WHERE id = ?`)
 }
 func DbSetUserActiveOrganization(userId int64, organizationId int64) error {
-	fmt.Println("Setting user:", userId, " to active organization: ", organizationId)
 	_, err := setUserActiveOrganizationStmt().Exec(organizationId, userId)
 	if err != nil {
 		return err
@@ -100,7 +98,6 @@ func DbGetUserByVerificationToken(token string, userEmail string) (common.User, 
 	var user common.User
 	err := row.Scan(&user.Id, &user.Email, &user.ActiveOrganizationId, &user.VerificationToken, &user.VerificationTokenExpiresAt, &user.VerifiedEmail)
 	if err != nil {
-		fmt.Println("Error getting user by verification token", "token", token, "email", userEmail, "error", err)
 		return common.User{}, err
 	}
 	return user, nil

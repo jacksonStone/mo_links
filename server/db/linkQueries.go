@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"mo_links/common"
 )
 
@@ -15,7 +14,7 @@ func initializeLinkQueries() {
 
 func incrementViewCountOfLinkStmt() *sql.Stmt {
 	return getQuery(`
-    UPDATE mo_links_entries SET views = views + 1 
+    UPDATE mo_links_entries SET views = views + 1
     WHERE organization_id = ? AND name = ?`)
 }
 func DbIncrementViewCountOfLink(organizationId int64, name string) error {
@@ -35,6 +34,16 @@ func DbAddLink(url string, name string, userId int64, activeOrganizationId int64
 	return nil
 }
 
+func getLinkStmt() *sql.Stmt {
+	return getQuery(`
+	SELECT id, name, url, organization_id, created_by_user_id FROM mo_links_entries WHERE id = ?`)
+}
+func DbGetLink(id int64) (common.MoLink, error) {
+	var link common.MoLink
+	err := getLinkStmt().QueryRow(id).Scan(&link.Id, &link.Name, &link.Url, &link.OrganizationId, &link.CreatedByUserId)
+	return link, err
+}
+
 func matchingLinksStmt() *sql.Stmt {
 	return getQuery(`
 	SELECT url, organization_id FROM mo_links_entries
@@ -42,7 +51,6 @@ func matchingLinksStmt() *sql.Stmt {
 	 AND name = ? ORDER BY created_at DESC`)
 }
 func DbGetMatchingLinks(organizationId int64, name string) ([]string, error) {
-	fmt.Println("dbGetMatchingLinks", organizationId, name)
 	rows, err := matchingLinksStmt().Query(organizationId, name)
 	if err != nil {
 		return []string{}, err
@@ -56,6 +64,24 @@ func DbGetMatchingLinks(organizationId int64, name string) ([]string, error) {
 		links = append(links, url)
 	}
 	return links, nil
+}
+
+func removeLinkStmt() *sql.Stmt {
+	return getQuery(`
+	DELETE FROM mo_links_entries WHERE id = ?`)
+}
+func DbRemoveLink(id int64) error {
+	_, err := removeLinkStmt().Exec(id)
+	return err
+}
+
+func updateLinkStmt() *sql.Stmt {
+	return getQuery(`
+	UPDATE mo_links_entries SET url = ? WHERE id = ?`)
+}
+func DbUpdateLink(id int64, url string) error {
+	_, err := updateLinkStmt().Exec(url, id)
+	return err
 }
 
 func getUserMoLinksStmt() *sql.Stmt {

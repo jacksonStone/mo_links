@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"mo_links/common"
 	"mo_links/db"
 	"strings"
 	"unicode"
@@ -32,7 +33,15 @@ func GetMatchingLinks(organizationId int64, name string) ([]string, error) {
 	go db.DbIncrementViewCountOfLink(organizationId, name)
 	return []string{match}, nil
 }
-
+func GetLink(id int64) (common.MoLink, error) {
+	return db.DbGetLink(id)
+}
+func RemoveLink(id int64) error {
+	return db.DbRemoveLink(id)
+}
+func UpdateLink(id int64, url string) error {
+	return db.DbUpdateLink(id, url)
+}
 func AddLink(url string, name string, userId int64, activeOrganizationId int64) error {
 	err := validName(name)
 	if err != nil {

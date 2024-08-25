@@ -46,12 +46,13 @@ type UserDetails struct {
 }
 
 type MoLink struct {
-	Id             int64
-	Name           string
-	Url            string
-	OrganizationId int64
-	CreatedAt      time.Time
-	Views          int64
+	Id              int64
+	Name            string
+	Url             string
+	OrganizationId  int64
+	CreatedAt       time.Time
+	Views           int64
+	CreatedByUserId int64
 }
 
 type MembershipInvite struct {
