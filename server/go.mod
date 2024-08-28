@@ -7,4 +7,5 @@ require github.com/mattn/go-sqlite3 v1.14.22
 require (
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.14.0+incompatible // indirect
+	github.com/stripe/stripe-go v70.15.0+incompatible // indirect
 )

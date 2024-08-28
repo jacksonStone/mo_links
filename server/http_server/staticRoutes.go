@@ -21,6 +21,7 @@ func initializeStaticRoutes() {
 	http.HandleFunc("/____reserved/verified_email", serveVerifiedEmailPage)
 	http.HandleFunc("/____reserved/get_started", serveGetStartedPage)
 	http.HandleFunc("/____reserved/hop", serveHopPage)
+
 	http.HandleFunc("/favicon.ico", faviconEndpoint)
 
 }
@@ -45,22 +46,82 @@ func serveStaticFiles(w http.ResponseWriter, r *http.Request) {
 	}
 	returnStaticFile(w, strings.TrimPrefix(r.URL.Path, "/____reserved/"))
 }
-func returnStaticFile(w http.ResponseWriter, path string) {
+func pathIsTemplatable(path string) bool {
+	return strings.HasSuffix(path, ".html") || strings.HasSuffix(path, ".js")
+}
+func getFileContents(path string) ([]byte, error) {
 	if os.Getenv("NODE_ENV") != "development" {
-		bytes, err := static.ReadFile(path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Write(bytes)
+		return static.ReadFile(path)
 	} else {
-		bytes, err := os.ReadFile("http_server/" + path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Write(bytes)
+		return os.ReadFile("http_server/" + path)
 	}
+}
+
+func getParsedFileContents(path string) ([]byte, error) {
+	bytes, err := getFileContents(path)
+	if err != nil {
+		return nil, err
+	}
+	strContent := string(bytes)
+
+	// Define your placeholders and their replacements here
+	replacements := map[string]string{
+		"{{STRIPE_PUBLIC_KEY}}": os.Getenv("MOLINKS_STRIPE_PUBLIC_KEY"),
+	}
+
+	// Replace placeholders
+	for placeholder, replacement := range replacements {
+		strContent = strings.ReplaceAll(strContent, placeholder, replacement)
+	}
+
+	// Convert back to []byte
+	return []byte(strContent), nil
+}
+
+var cache = make(map[string][]byte)
+
+func getCacheableFileContents(path string) ([]byte, error) {
+	if pathIsTemplatable(path) {
+		return getCacheableParsedFileContents(path)
+	}
+	if os.Getenv("NODE_ENV") == "development" {
+		return getFileContents(path)
+	}
+	if cached, ok := cache[path]; ok {
+		return cached, nil
+	}
+	bytes, err := getFileContents(path)
+	if err != nil {
+		return nil, err
+	}
+	cache[path] = bytes
+	return bytes, nil
+}
+
+var parsedCache = make(map[string][]byte)
+
+func getCacheableParsedFileContents(path string) ([]byte, error) {
+	if os.Getenv("NODE_ENV") == "development" {
+		return getParsedFileContents(path)
+	}
+	if cached, ok := parsedCache[path]; ok {
+		return cached, nil
+	}
+	bytes, err := getParsedFileContents(path)
+	if err != nil {
+		return nil, err
+	}
+	parsedCache[path] = bytes
+	return bytes, nil
+}
+
+func returnStaticFile(w http.ResponseWriter, path string) {
+	bytes, err := getCacheableFileContents(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(bytes)
 }
 
 func serveVerifiedEmailPage(w http.ResponseWriter, r *http.Request) {

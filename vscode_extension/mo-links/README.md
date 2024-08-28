@@ -35,7 +35,7 @@ Contributions to the Mo Link extension are welcome! Please feel free to submit a
 
 ## Support
 
-If you encounter any problems or have any suggestions, please open an issue on the GitHub repository. [https://github.com/jacksonStone/mo_links](https://github.com/jacksonStone/mo_links)
+If you encounter any problems or have any suggestions, please open an issue on the GitHub repository. [https://github.com/jacksonStone/molinks_extensions](https://github.com/jacksonStone/molinks_extensions)
 
 ## Acknowledgments
 
