@@ -20,5 +20,6 @@ func initializeRoutes() {
 	initializeAuthRoutes()
 	initializeOrganizationRoutes()
 	initializeUserDetailRoutes()
+	initializeMoneyRoutes()
 	initializeLinkRoutes()
 }

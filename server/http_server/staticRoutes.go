@@ -84,7 +84,7 @@ func getCacheableFileContents(path string) ([]byte, error) {
 	if pathIsTemplatable(path) {
 		return getCacheableParsedFileContents(path)
 	}
-	if os.Getenv("NODE_ENV") == "development" {
+	if os.Getenv("NODE_ENV") == "development" || strings.Contains(path, ".png") || strings.Contains(path, ".svg") {
 		return getFileContents(path)
 	}
 	if cached, ok := cache[path]; ok {
