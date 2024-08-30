@@ -3,3 +3,4 @@ mo_links
 *.zip
 chrome_extension_local/
 node_modules/
+product_catalog.json

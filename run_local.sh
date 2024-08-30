@@ -2,6 +2,7 @@
 rm -rf chrome_extension_local/
 mkdir chrome_extension_local/
 cp -r chrome_extension/* chrome_extension_local/
+cp ../product_catalog/product_catalog.json ./server/http_server/static/product_catalog.json
 # replace instances of molinks.me with localhost:3003
 sed -i '' 's/www.molinks.me/localhost:3003/g' chrome_extension_local/background.js
 sed -i '' 's/www.molinks.me/localhost:3003/g' chrome_extension_local/popup.js

@@ -1,4 +1,5 @@
 #!/bin/bash
+cp ../product_catalog/product_catalog.json ./server/http_server/static/product_catalog.json
 
 # Step 2: SCP the Go binary to the EC2 instance
 echo "Copying Go binary to EC2 instance..."
