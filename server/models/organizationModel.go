@@ -4,6 +4,7 @@ import (
 	"errors"
 	"mo_links/common"
 	"mo_links/db"
+	"time"
 )
 
 func GetMatchingOrganizations(userId int64) ([]common.Organization, error) {
@@ -75,6 +76,12 @@ func ChangeUserRoleInOrganization(userId int64, organizationId int64, newRole st
 func RemoveUserFromOrganization(userId int64, organizationId int64) error {
 	return db.DbRemoveUserFromOrganization(userId, organizationId)
 }
+func SetSubscriptionToActive(organizationId int64, months int) error {
+	// Get Expected End Date
+	now := time.Now()
+	expectedEndDate := now.AddDate(0, months, 0)
+	return db.DbSetSubscriptionToActive(organizationId, expectedEndDate)
+}
 func RoleCanChangeMemberRole(userRole string, currentUserTargetRole string, targetRole string) bool {
 	if targetRole != common.RoleMember && targetRole != common.RoleAdmin && targetRole != common.RoleOwner {
 		// Not a valid role to change to
@@ -106,4 +113,7 @@ func RoleCanUpdateLink(userRole string) bool {
 }
 func RoleCanViewMembers(userRole string) bool {
 	return userRole == common.RoleAdmin || userRole == common.RoleOwner
+}
+func RoleCanBuySubscription(userRole string) bool {
+	return userRole == common.RoleOwner
 }

@@ -21,10 +21,12 @@ type TrimmedUser struct {
 }
 
 type Organization struct {
-	Id              int64
-	Name            string
-	IsPersonal      bool
-	CreatedByUserId int64
+	Id                 int64
+	Name               string
+	IsPersonal         bool
+	CreatedByUserId    int64
+	ProjectedEndDate   int64 // Unix Timestamp
+	ActiveSubscription bool
 }
 
 type OrganizationMember struct {

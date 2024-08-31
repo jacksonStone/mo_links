@@ -46,6 +46,10 @@ func getProductCatalogImageEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func getCheckoutEndpoint(w http.ResponseWriter, r *http.Request) {
+	returnURL := "https://" + siteDomain
+	if os.Getenv("NODE_ENV") == "development" {
+		returnURL = "http://localhost:3003"
+	}
 	fmt.Println("getCheckoutEndpoint")
 	user, err := getVerifiedUserInCookies(r)
 	if err != nil {
@@ -75,13 +79,29 @@ func getCheckoutEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ItemId is required", http.StatusBadRequest)
 		return
 	}
+	organizationId, err := strconv.ParseInt(checkoutBody.OrganizationId, 10, 64)
+	if err != nil {
+		fmt.Println("Error parsing OrganizationId:", err)
+		http.Error(w, "Invalid OrganizationId", http.StatusBadRequest)
+		return
+	}
+	userRole, err := models.GetUserRoleInOrganization(user.Id, organizationId)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !models.RoleCanBuySubscription(userRole) {
+		http.Error(w, "User is not allowed to buy subscription for this organization", http.StatusUnauthorized)
+		return
+	}
 	var fatStacksCheckoutRequest fatStacksCheckoutRequest
 	fatStacksCheckoutRequest.AppName = siteDomain
 	fatStacksCheckoutRequest.UserId = strconv.FormatInt(user.Id, 10)
 	fatStacksCheckoutRequest.UserEmail = user.Email
 	fatStacksCheckoutRequest.Items = []string{checkoutBody.ItemId}
-	fatStacksCheckoutRequest.FulfillmentUrl = "https://" + siteDomain + "/____reserved/fulfill_checkout"
-	fatStacksCheckoutRequest.UndoFulfillmentUrl = "https://" + siteDomain + "/____reserved/unfulfill_checkout"
+	fatStacksCheckoutRequest.FulfillmentUrl = returnURL + "/____reserved/fulfill_checkout"
+	fatStacksCheckoutRequest.UndoFulfillmentUrl = returnURL + "/____reserved/unfulfill_checkout"
 	fatStacksCheckoutRequest.Metadata = map[string]string{
 		//Required for fulfillment
 		"organizationId": checkoutBody.OrganizationId,
@@ -105,7 +125,7 @@ func getCheckoutEndpoint(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(resp.Body).Decode(&fatStacksCheckoutResponse)
 	if err != nil {
 		fmt.Println(err)
-		fmt.Println("getCheckoutEndpoint - cant decode")
+		fmt.Println("getCheckoutEndpoint - cant decode response")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -118,9 +138,9 @@ type fatStacksCheckoutResponse struct {
 	RedirectUrl string `json:"redirectUrl"`
 }
 type checkoutFulfillmentResult struct {
-	UserId   string            `json:"userId"`
-	Items    []string          `json:"items"`
-	Metadata map[string]string `json:"metadata"`
+	UserId   string   `json:"userId"`
+	Items    []string `json:"items"`
+	Metadata string   `json:"metadata"` // JSON Stringified... I hope.
 }
 
 func getFulfillCheckoutEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -140,6 +160,13 @@ func getFulfillCheckoutEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	metadata := make(map[string]string)
+	err = json.Unmarshal([]byte(checkoutFulfillmentResult.Metadata), &metadata)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	fmt.Println("getFulfillCheckoutEndpoint - fulfillment result", checkoutFulfillmentResult)
 	//We only support one item for now
 	product, err := getProductFromProductCatalog(checkoutFulfillmentResult.Items[0])
@@ -155,11 +182,12 @@ func getFulfillCheckoutEndpoint(w http.ResponseWriter, r *http.Request) {
 		months = 12
 	}
 	// get the organization from the metadata
-	organizationId := checkoutFulfillmentResult.Metadata["organizationId"]
+	organizationId := metadata["organizationId"]
+	fmt.Println("getFulfillCheckoutEndpoint - organizationId", organizationId)
 	organizationIdInt, err := strconv.ParseInt(organizationId, 10, 64)
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	organization, err := models.GetOrganizationById(organizationIdInt)
@@ -168,6 +196,22 @@ func getFulfillCheckoutEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	err = models.SetSubscriptionToActive(organization.Id, months)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	organization, err = models.GetOrganizationById(organizationIdInt)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Println("getFulfillCheckoutEndpoint - organization after set subscription to active", organization)
+
+	// TODO:: Set organization to active_subscription
+
 	fmt.Println("getFulfillCheckoutEndpoint - organization", organization)
 	fmt.Println("getFulfillCheckoutEndpoint - months", months)
 
@@ -224,7 +268,7 @@ func getProductCatalog() ProductCatalog {
 	if productCatalog != nil {
 		return productCatalog
 	}
-	productCatalogBytes, err := os.ReadFile("static/product_catalog.json")
+	productCatalogBytes, err := static.ReadFile("static/product_catalog.json")
 	if err != nil {
 		log.Fatalf("Failed to read product catalog: %v", err)
 	}
@@ -243,5 +287,8 @@ func getProductFromProductCatalog(productId string) (Product, error) {
 		return Product{}, fmt.Errorf("website not found in product catalog")
 	}
 	product, ok := websiteCatalog.Products[productId]
+	if !ok {
+		return Product{}, fmt.Errorf("product not found in product catalog")
+	}
 	return product, nil
 }

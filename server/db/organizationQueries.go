@@ -2,7 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"mo_links/common"
+	"time"
 )
 
 func initializeOrganizationQueries() {
@@ -13,6 +15,11 @@ func initializeOrganizationQueries() {
 	assignMemberToOrganizationStmt()
 	getOrganizationMembersStmt()
 	getUsersOrganizationAndRoleForEachStmt()
+	setSubscriptionToActiveStmt()
+	getOwnerOfOrganizationStmt()
+	changeUserRoleInOrganizationStmt()
+	removeUserFromOrganizationStmt()
+
 }
 
 func DbChangeOwnerOfOrganization(userId int64, organizationId int64) error {
@@ -29,6 +36,21 @@ func DbChangeOwnerOfOrganization(userId int64, organizationId int64) error {
 	tx.Stmt(changeUserRoleInOrganizationStmt()).Exec(common.RoleAdmin, ownerUserId, organizationId)
 	return tx.Commit()
 }
+func setSubscriptionToActiveStmt() *sql.Stmt {
+	return getQuery(`
+    UPDATE mo_links_organizations SET projected_subscription_end_date = ?, active_subscription = ? WHERE id = ?`)
+}
+func DbSetSubscriptionToActive(organizationId int64, expectedEndDate time.Time) error {
+	unixTimestamp := expectedEndDate.Unix()
+	fmt.Println("DbSetSubscriptionToActive - unixTimestamp", unixTimestamp)
+	fmt.Println("DbSetSubscriptionToActive - organizationId", organizationId)
+	_, err := setSubscriptionToActiveStmt().Exec(unixTimestamp, true, organizationId)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
 func getOwnerOfOrganizationStmt() *sql.Stmt {
 	return getQuery(`
     SELECT user_id FROM mo_links_organization_memberships WHERE organization_id = ? AND role = "` + common.RoleOwner + `" LIMIT 1`)
@@ -44,12 +66,12 @@ func dbGetOwnerOfOrganization(tx *sql.Tx, organizationId int64) (int64, error) {
 }
 func organizationByIdStmt() *sql.Stmt {
 	return getQuery(`
-	SELECT id, name, is_personal, created_by_user_id FROM mo_links_organizations WHERE id = ?`)
+	SELECT id, name, is_personal, created_by_user_id, COALESCE(projected_subscription_end_date, 0) AS projected_subscription_end_date, COALESCE(active_subscription, false) AS active_subscription FROM mo_links_organizations WHERE id = ?`)
 }
 func DbGetOrganizationById(organizationId int64) (common.Organization, error) {
 	row := organizationByIdStmt().QueryRow(organizationId)
 	var organization common.Organization
-	err := row.Scan(&organization.Id, &organization.Name, &organization.IsPersonal, &organization.CreatedByUserId)
+	err := row.Scan(&organization.Id, &organization.Name, &organization.IsPersonal, &organization.CreatedByUserId, &organization.ProjectedEndDate, &organization.ActiveSubscription)
 	if err != nil {
 		return common.Organization{}, err
 	}
